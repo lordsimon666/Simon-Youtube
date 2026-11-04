@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('api', {
   saveSplits: (splits) => ipcRenderer.send('layout:splits', splits),
   login: () => ipcRenderer.send('auth:login'),
   logout: () => ipcRenderer.send('auth:logout'),
+  importCookies: () => ipcRenderer.send('auth:importCookies'),
   playLater: (id) => ipcRenderer.send('later:play', id),
   removeLater: (id) => ipcRenderer.send('later:remove', id),
   clearLater: () => ipcRenderer.send('later:clear'),

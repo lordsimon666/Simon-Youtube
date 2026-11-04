@@ -1,6 +1,6 @@
 'use strict';
 const {
-  app, BrowserWindow, WebContentsView, ipcMain, session, shell, net, Menu, screen,
+  app, BrowserWindow, WebContentsView, ipcMain, session, shell, net, Menu, screen, dialog,
 } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -452,9 +452,83 @@ function openLogin() {
     if (loggedIn && !wasLoggedIn) {
       toast('Angemeldet');
       reloadAll();
+      return;
+    }
+    if (!loggedIn && win && !win.isDestroyed()) {
+      // Google blockiert die Anmeldung in eingebetteten Browsern oft -> Alternative anbieten
+      const { response } = await dialog.showMessageBox(win, {
+        type: 'question',
+        title: 'Anmeldung',
+        message: 'Anmeldung nicht geklappt?',
+        detail: 'Google lässt die Anmeldung in Apps manchmal nicht zu ("Dieser Browser oder diese App ist ' +
+          'unter Umständen nicht sicher").\n\nAlternative: Melde dich in deinem normalen Browser bei YouTube an, ' +
+          'exportiere die Cookies als cookies.txt (z. B. mit der Erweiterung "Get cookies.txt LOCALLY") ' +
+          'und importiere die Datei hier.',
+        buttons: ['cookies.txt importieren …', 'Abbrechen'],
+        defaultId: 0,
+        cancelId: 1,
+      });
+      if (response === 0) importCookies(win);
     }
   });
   lw.loadURL(LOGIN_URL);
+}
+
+// ---------------------------------------------------------------- cookies.txt-Import
+// Übernimmt die Anmeldung aus dem normalen Browser (Netscape-cookies.txt-Format).
+async function importCookies(parent) {
+  const res = await dialog.showOpenDialog(parent || win, {
+    title: 'cookies.txt auswählen',
+    properties: ['openFile'],
+    filters: [{ name: 'Cookies (Netscape-Format)', extensions: ['txt'] }, { name: 'Alle Dateien', extensions: ['*'] }],
+  });
+  if (res.canceled || !res.filePaths[0]) return;
+  let text;
+  try { text = fs.readFileSync(res.filePaths[0], 'utf8'); } catch (err) {
+    dialog.showErrorBox('Import fehlgeschlagen', String(err.message || err));
+    return;
+  }
+  const ses = ytSession();
+  let ok = 0;
+  for (let line of text.split(/\r?\n/)) {
+    let httpOnly = false;
+    if (line.startsWith('#HttpOnly_')) { httpOnly = true; line = line.slice(10); }
+    if (!line.trim() || line.startsWith('#')) continue;
+    const parts = line.split('\t');
+    if (parts.length < 7) continue;
+    const [domain, , cpath, secureFlag, expiry, name, ...rest] = parts;
+    const host = domain.replace(/^\./, '');
+    if (!/(^|\.)(youtube\.com|google\.[a-z.]+)$/.test(host)) continue;
+    const secure = secureFlag.toUpperCase() === 'TRUE';
+    const exp = Number(expiry);
+    const cookie = {
+      url: `${secure ? 'https' : 'http'}://${host}${cpath || '/'}`,
+      name,
+      value: rest.join('\t'),
+      path: cpath || '/',
+      secure,
+      httpOnly,
+      sameSite: secure ? 'no_restriction' : 'unspecified',
+    };
+    if (!name.startsWith('__Host-')) cookie.domain = domain;
+    if (exp > 0) cookie.expirationDate = exp;
+    try { await ses.cookies.set(cookie); ok++; } catch { /* einzelnes Cookie ungültig */ }
+  }
+  await ses.cookies.flushStore().catch(() => {});
+  const was = loggedIn;
+  await refreshAuth();
+  if (loggedIn) {
+    toast(`Angemeldet (${ok} Cookies übernommen)`);
+    if (!was) reloadAll();
+    if (loginWin && !loginWin.isDestroyed()) loginWin.close();
+  } else {
+    dialog.showMessageBox(parent || win, {
+      type: 'warning',
+      title: 'Nicht angemeldet',
+      message: `${ok} Cookies übernommen, aber keine YouTube-Anmeldung gefunden.`,
+      detail: 'Exportiere die Cookies, während du in deinem Browser auf youtube.com angemeldet bist.',
+    });
+  }
 }
 
 async function logout() {
@@ -492,7 +566,7 @@ function showWelcome() {
     parent: win,
     modal: true,
     width: 480,
-    height: 440,
+    height: 480,
     resizable: false,
     minimizable: false,
     maximizable: false,
@@ -698,7 +772,7 @@ function openSettings() {
   settingsWin = new BrowserWindow({
     parent: win || undefined,
     width: 480,
-    height: 560,
+    height: 700,
     resizable: false,
     minimizable: false,
     maximizable: false,
@@ -794,6 +868,18 @@ ipcMain.on('layout:splits', (e, s) => {
 
 ipcMain.on('auth:login', (e) => { if (fromHost(e)) openLogin(); });
 ipcMain.on('auth:logout', (e) => { if (fromHost(e)) logout(); });
+ipcMain.on('auth:importCookies', (e) => {
+  if (!fromHost(e)) return;
+  const parent = BrowserWindow.fromWebContents(e.sender);
+  if (welcomeWin && parent === welcomeWin) {
+    store.firstRunDone = true;
+    saveStore();
+    welcomeWin.close();
+    importCookies(win);
+  } else {
+    importCookies(parent);
+  }
+});
 
 ipcMain.on('later:play', (e, id) => {
   if (!fromHost(e)) return;

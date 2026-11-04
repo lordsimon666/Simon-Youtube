@@ -26,6 +26,18 @@ YouTube als Desktop-App mit **vier Panels**:
   - **Videoqualität**: *Auto* oder feste Auflösung (144p … 4K). Ist die gewählte nicht verfügbar, wird die nächstniedrigere genommen.
 - Oben rechts: **Anmelden** / **Abmelden**. Beim allerersten Start erscheint ein Anmeldefenster, dort kann man auch **„Ohne Anmeldung fortfahren“** wählen.
 
+## Anmeldung klappt nicht? („Dieser Browser oder diese App ist unter Umständen nicht sicher“)
+
+Google lässt die Anmeldung in eingebetteten App-Browsern oft nicht zu. Dann so:
+
+1. In deinem normalen Browser (Chrome/Firefox/Edge) auf youtube.com anmelden.
+2. Mit einer Erweiterung wie **„Get cookies.txt LOCALLY“** die Cookies von youtube.com als `cookies.txt` exportieren.
+3. In Simon YouTube: **⚙ Einstellungen → cookies.txt importieren …** (oder beim ersten Start „Mit cookies.txt anmelden“,
+   oder nach einem fehlgeschlagenen Login im Hinweisfenster).
+4. Die `cookies.txt` danach löschen – sie enthält deine Anmeldung.
+
+Es werden nur Cookies von youtube.com und google.* übernommen.
+
 ## Downloads
 
 Alles wird automatisch von GitHub Actions gebaut und unter

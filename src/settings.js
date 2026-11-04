@@ -23,6 +23,8 @@ function save() {
   });
 }
 
+document.getElementById('import-cookies').addEventListener('click', () => api.importCookies());
+
 api.getSettings().then((s) => {
   for (const r of radios) r.checked = r.value === s.volumeMode;
   strength.value = String(s.volumeStrength);
