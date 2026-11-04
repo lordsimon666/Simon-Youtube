@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('api', {
   setCommentsTab: (tab) => ipcRenderer.send('comments:tab', tab),
   welcomeChoice: (choice) => ipcRenderer.send('welcome:choice', choice),
   toggleSplit: () => ipcRenderer.send('split:toggle'),
+  setWindowMode: (mode) => ipcRenderer.send('window:mode', mode),
   openAddress: (text, mode) => ipcRenderer.invoke('address:open', text, mode),
   copyCurrentLink: () => ipcRenderer.send('video:copyLink'),
   setDragging: (on) => ipcRenderer.send('layout:dragging', !!on),

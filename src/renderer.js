@@ -1,5 +1,8 @@
 'use strict';
 /* global api, I18N, renderLaterList */
+// Dieselbe Oberfläche dient im 2-Fenster-Modus auch als Panel-Fenster (ohne Player)
+const PANELS_WIN = new URLSearchParams(location.search).get('mode') === 'panels';
+if (PANELS_WIN) document.body.classList.add('panels-window');
 let lang = 'de';
 const L = (key, vars) => I18N.t(lang, key, vars);
 const last = { auth: { loggedIn: false }, split: false, now: null, items: [] };
@@ -147,7 +150,7 @@ let hidden = { browser: false, comments: false, later: false };
 function updateVisibility() {
   for (const pos of document.querySelectorAll('.pos')) {
     const key = pos.querySelector('.panel').id.replace('panel-', '');
-    pos.classList.toggle('is-hidden', key !== 'video' && !!hidden[key]);
+    pos.classList.toggle('is-hidden', key === 'video' ? PANELS_WIN : !!hidden[key]);
   }
   let colHidden = false;
   for (const col of document.querySelectorAll('.col')) {
@@ -222,16 +225,19 @@ $('#btn-logout').addEventListener('click', () => {
 });
 
 // ---------------------------------------------------------------- 4 Fenster / Einstellungen
-function setSplit(on) {
-  last.split = !!on;
-  document.body.classList.toggle('split', !!on);
-  const b = $('#btn-split');
-  b.querySelector('.ico').textContent = on ? '\u229F' : '\u229E';
-  b.querySelector('.lbl').textContent = on ? L('top.merge') : L('top.split');
-  b.title = on ? L('top.merge.title') : L('top.split.title');
+function setSplit(mode) {
+  if (mode === true) mode = 'split4';
+  if (!mode) mode = 'single';
+  last.split = mode;
+  if (PANELS_WIN) return;
+  // Im 2- und 4-Fenster-Modus zeigt das Hauptfenster nur den Player
+  document.body.classList.toggle('split', mode !== 'single');
+  for (const b of document.querySelectorAll('.mode')) b.classList.toggle('active', b.dataset.mode === mode);
   queueLayout();
 }
-$('#btn-split').addEventListener('click', () => api.toggleSplit());
+for (const b of document.querySelectorAll('.mode')) {
+  b.addEventListener('click', () => api.setWindowMode(b.dataset.mode));
+}
 $('#btn-settings').addEventListener('click', () => api.openSettings());
 
 // ---------------------------------------------------------------- Browser-Navigation

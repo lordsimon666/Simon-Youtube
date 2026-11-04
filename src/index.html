@@ -20,9 +20,11 @@
       <button class="tgl" data-panel="comments" data-i18n-title="tgl.title"><span class="dot"></span><span data-i18n="tgl.comments"></span></button>
       <button class="tgl" data-panel="later" data-i18n-title="tgl.title"><span class="dot"></span><span data-i18n="tgl.later"></span></button>
     </div>
-    <button id="btn-split" class="btn">
-      <span class="ico">&#8862;</span> <span class="lbl"></span>
-    </button>
+    <div class="modes" role="group">
+      <button class="mode" data-mode="single" data-i18n-title="mode.single.title"><span class="ico">&#9635;</span><span class="lbl" data-i18n="mode.single"></span></button>
+      <button class="mode" data-mode="split2" data-i18n-title="mode.split2.title"><span class="ico">&#9703;</span><span class="lbl" data-i18n="mode.split2"></span></button>
+      <button class="mode" data-mode="split4" data-i18n-title="mode.split4.title"><span class="ico">&#8862;</span><span class="lbl" data-i18n="mode.split4"></span></button>
+    </div>
     <button id="btn-settings" class="btn icon" data-i18n-title="top.settings.title">&#9881;</button>
     <span id="auth-status" class="auth-status"></span>
     <button id="btn-login" class="btn primary" data-i18n="auth.login"></button>

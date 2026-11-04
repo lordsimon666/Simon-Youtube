@@ -205,7 +205,18 @@ body.dragging-panel .pos.drop-target .panel::after {
 /* ---------- Kopfzeilen-Buttons */
 .btn .ico { font-size: 15px; line-height: 1; }
 .btn.icon { width: 32px; height: 32px; padding: 0; font-size: 17px; display: inline-flex; align-items: center; justify-content: center; }
-#btn-split { display: inline-flex; align-items: center; gap: 4px; }
+/* Fenster-Modus: 1 Fenster / Player + Panels / 4 Fenster */
+.modes { display: flex; gap: 2px; background: #161616; border: 1px solid var(--border); border-radius: 999px; padding: 2px; flex: none; }
+.mode {
+  display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: var(--muted);
+  border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 600;
+}
+.mode .ico { font-size: 14px; line-height: 1; }
+.mode:hover { background: var(--hover); color: var(--text); }
+.mode.active { background: var(--text); color: #0f0f0f; }
+
+/* Panel-Fenster (2-Fenster-Modus): keine Kopfzeile, kein Player */
+body.panels-window .topbar { display: none; }
 
 /* ---------- 4-Fenster-Modus: Hauptfenster zeigt nur "Später ansehen" */
 /* 4-Fenster-Modus: Hauptfenster = Media-Player */
@@ -322,7 +333,8 @@ body.panel-window.role-later .later-list { flex: 1; }
 
 /* schmale Kopfzeile: Texte der Knöpfe kürzen */
 @media (max-width: 1250px) {
-  #btn-split .lbl, .auth-status { display: none; }
+  .mode .lbl, .auth-status { display: none; }
+  .mode { padding: 5px 9px; }
 }
 @media (max-width: 1000px) {
   .brand-text { display: none; }

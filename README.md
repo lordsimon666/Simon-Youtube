@@ -25,7 +25,14 @@ YouTube als Desktop-App mit **vier Panels**:
 - Die Trennlinien zwischen den Panels lassen sich ziehen (Doppelklick = zurücksetzen).
 - **Panels ein-/ausblenden**: Mit den Knöpfen **Browser · Kommentare · Später** oben lassen sich diese Panels
   aus- und wieder einblenden. Der **Media-Player** (Video) bleibt immer sichtbar; die übrigen Panels füllen den Platz.
-- **⊞ In 4 Fenster aufteilen** (oben): Das Hauptfenster wird zum **Media-Player**, Browser, Kommentare und
+- **Fenster-Modus** (oben: **▣ 1 Fenster · ◧ Player + Panels · ⊞ 4 Fenster**):
+  - **1 Fenster**: alles zusammen.
+  - **Player + Panels**: Der Player hat ein eigenes Fenster, Browser, Kommentare und Später ansehen liegen zusammen in
+    einem zweiten Fenster (dort ebenfalls verschiebbar, in der Größe änderbar und ausblendbar). Das X am Panel-Fenster
+    blendet es aus, über die Knöpfe im Player kommt es zurück.
+  - **4 Fenster**: siehe unten.
+  Der gewählte Modus bleibt nach einem Neustart erhalten.
+- **⊞ 4 Fenster**: Das Hauptfenster wird zum **Media-Player**, Browser, Kommentare und
   Später ansehen bekommen eigene Fenster (z. B. für mehrere Monitore). Beim ersten Mal wird der Bildschirm in vier
   Viertel geteilt, danach merkt sich die App die Fensterpositionen. Das **X** an einem dieser Fenster blendet es nur aus –
   über die Knöpfe oben im Player kommt es zurück. **⊟ Zusammenfügen** holt alles wieder in ein Fenster.
