@@ -440,12 +440,20 @@ function openLogin() {
     if (isInternalUrl(url)) lw.loadURL(url); else openExternal(url);
     return { action: 'deny' };
   });
+  let blocked = false;
   const check = async (_e, url) => {
     try {
-      if (new URL(url).hostname === 'www.youtube.com' && await checkLoggedIn() && !lw.isDestroyed()) lw.close();
+      const u = new URL(url);
+      if (u.hostname === 'www.youtube.com' && await checkLoggedIn() && !lw.isDestroyed()) lw.close();
+      // Googles Sperrseite "Anmeldung nicht möglich – Dieser Browser oder diese App ist unter Umständen nicht sicher"
+      if (/^accounts\.google\./.test(u.hostname) && /rejected|disallowed|unsupported/i.test(u.pathname + u.search)) {
+        blocked = true;
+        if (!lw.isDestroyed()) lw.close();
+      }
     } catch { /* ignorieren */ }
   };
   lw.webContents.on('did-navigate', check);
+  lw.webContents.on('did-navigate-in-page', check);
   lw.on('closed', async () => {
     loginWin = null;
     await refreshAuth();
@@ -454,24 +462,40 @@ function openLogin() {
       reloadAll();
       return;
     }
-    if (!loggedIn && win && !win.isDestroyed()) {
-      // Google blockiert die Anmeldung in eingebetteten Browsern oft -> Alternative anbieten
-      const { response } = await dialog.showMessageBox(win, {
-        type: 'question',
-        title: 'Anmeldung',
-        message: 'Anmeldung nicht geklappt?',
-        detail: 'Google lässt die Anmeldung in Apps manchmal nicht zu ("Dieser Browser oder diese App ist ' +
-          'unter Umständen nicht sicher").\n\nAlternative: Melde dich in deinem normalen Browser bei YouTube an, ' +
-          'exportiere die Cookies als cookies.txt (z. B. mit der Erweiterung "Get cookies.txt LOCALLY") ' +
-          'und importiere die Datei hier.',
-        buttons: ['cookies.txt importieren …', 'Abbrechen'],
-        defaultId: 0,
-        cancelId: 1,
-      });
-      if (response === 0) importCookies(win);
-    }
+    if (!loggedIn && win && !win.isDestroyed()) showLoginHelp(blocked);
   });
   lw.loadURL(LOGIN_URL);
+}
+
+// Google blockiert die Anmeldung in App-Browsern -> Anmeldung aus dem normalen Browser übernehmen
+const COOKIE_EXT_CHROME = 'https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc';
+const COOKIE_EXT_FIREFOX = 'https://addons.mozilla.org/firefox/addon/get-cookies-txt-locally/';
+
+async function showLoginHelp(blocked) {
+  for (;;) {
+    const { response } = await dialog.showMessageBox(win, {
+      type: blocked ? 'warning' : 'question',
+      title: 'Anmeldung',
+      message: blocked ? 'Google blockiert die Anmeldung in Apps' : 'Anmeldung nicht geklappt?',
+      detail:
+        'Google erlaubt die Anmeldung nur in normalen Browsern. Du kannst die Anmeldung aber aus deinem ' +
+        'Browser übernehmen:\n\n' +
+        '1. In Chrome/Edge/Firefox auf youtube.com anmelden.\n' +
+        '2. Erweiterung „Get cookies.txt LOCALLY“ installieren (Knopf unten).\n' +
+        '3. Auf youtube.com die Erweiterung öffnen → „Export“ → cookies.txt speichern.\n' +
+        '4. Hier „cookies.txt importieren …“ wählen.\n' +
+        '5. Die cookies.txt danach löschen – sie enthält deine Anmeldung.',
+      buttons: ['cookies.txt importieren …', 'Erweiterung (Chrome/Edge)', 'Erweiterung (Firefox)', 'youtube.com im Browser öffnen', 'Schließen'],
+      defaultId: 0,
+      cancelId: 4,
+      noLink: true,
+    });
+    if (response === 0) { importCookies(win); return; }
+    if (response === 1) shell.openExternal(COOKIE_EXT_CHROME);
+    else if (response === 2) shell.openExternal(COOKIE_EXT_FIREFOX);
+    else if (response === 3) shell.openExternal(HOME_URL);
+    else return;
+  }
 }
 
 // ---------------------------------------------------------------- cookies.txt-Import
@@ -531,6 +555,16 @@ async function importCookies(parent) {
   }
 }
 
+// YouTube startet Videos dann direkt im Kinomodus (wichtig fürs Video-Panel)
+async function setTheaterCookie() {
+  try {
+    await ytSession().cookies.set({
+      url: HOME_URL, domain: '.youtube.com', path: '/', name: 'wide', value: '1',
+      secure: true, sameSite: 'lax', expirationDate: Math.floor(Date.now() / 1000) + 365 * 24 * 3600,
+    });
+  } catch { /* egal */ }
+}
+
 async function logout() {
   const ses = ytSession();
   try {
@@ -538,6 +572,7 @@ async function logout() {
     await ses.clearCache();
   } catch (err) { console.error(err); }
   await refreshAuth();
+  await setTheaterCookie();
   views.browser.webContents.loadURL(HOME_URL);
   if (current) {
     views.video.webContents.reload();
@@ -958,6 +993,7 @@ if (!app.requestSingleInstanceLock()) {
       authTimer = setTimeout(refreshAuth, 600);
     });
     loggedIn = await checkLoggedIn();
+    await setTheaterCookie();
 
     createWindow();
   });

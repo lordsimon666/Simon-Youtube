@@ -9,34 +9,33 @@ ytd-app { --ytd-masthead-height: 0px !important; --ytd-toolbar-height: 0px !impo
 #page-manager.ytd-app { margin-top: 0 !important; margin-left: 0 !important; }
 `;
 
-// Video-Panel: Player füllt das ganze Panel (normale Videos), Shorts ohne Kopfzeile.
+// Video-Panel: YouTubes eigener Kinomodus, alles außer dem Player ausgeblendet.
+// Der Player berechnet seine Größe dabei selbst (kein position:fixed – das bricht den neuen Player).
 const video = `
 html[data-ytp-page="watch"], html[data-ytp-page="watch"] body {
   overflow: hidden !important; background: #000 !important;
 }
-html[data-ytp-page="watch"] :is(ytd-app, ytd-page-manager, ytd-watch-flexy, #columns, #primary,
-  #primary-inner, #player, #player-container-outer, #player-container-inner, #player-container,
-  #ytd-player, #container.ytd-player, #full-bleed-container, #player-full-bleed-container,
-  #player-wide-container, #player-theater-container) {
-  contain: none !important; transform: none !important; filter: none !important;
-  will-change: auto !important;
+html[data-ytp-page="watch"] #masthead-container,
+html[data-ytp-page="watch"] ytd-masthead,
+html[data-ytp-page="watch"] tp-yt-app-drawer#guide,
+html[data-ytp-page="watch"] ytd-mini-guide-renderer { display: none !important; }
+html[data-ytp-page="watch"] ytd-app { --ytd-masthead-height: 0px !important; --ytd-toolbar-height: 0px !important; }
+html[data-ytp-page="watch"] #page-manager.ytd-app { margin-top: 0 !important; margin-left: 0 !important; }
+
+/* Kinomodus: Player-Bereich = ganzes Panel, Rest der Seite weg */
+html[data-ytp-page="watch"] ytd-watch-flexy[theater] #full-bleed-container,
+html[data-ytp-page="watch"] ytd-watch-flexy[full-bleed-player] #full-bleed-container,
+html[data-ytp-page="watch"] ytd-watch-flexy[theater] #player-full-bleed-container,
+html[data-ytp-page="watch"] ytd-watch-flexy[full-bleed-player] #player-full-bleed-container {
+  height: 100vh !important; max-height: 100vh !important; min-height: 0 !important;
 }
-html[data-ytp-page="watch"] #movie_player {
-  position: fixed !important; top: 0 !important; left: 0 !important;
-  width: 100vw !important; height: 100vh !important;
-  max-width: none !important; max-height: none !important;
-  z-index: 2147483000 !important; background: #000 !important;
-}
-html[data-ytp-page="watch"] #movie_player video.html5-main-video {
-  width: 100% !important; height: 100% !important; left: 0 !important; top: 0 !important;
-  object-fit: contain !important;
-}
-html[data-ytp-page="watch"] #masthead-container { display: none !important; }
-html[data-ytp-page="watch"] ytd-popup-container tp-yt-paper-dialog,
-html[data-ytp-page="watch"] ytd-popup-container tp-yt-iron-dropdown,
-html[data-ytp-page="watch"] tp-yt-iron-overlay-backdrop {
-  z-index: 2147483600 !important;
-}
+html[data-ytp-page="watch"] ytd-watch-flexy[theater] #columns,
+html[data-ytp-page="watch"] ytd-watch-flexy[full-bleed-player] #columns { display: none !important; }
+
+/* Bis der Kinomodus aktiv ist: nur den Player zeigen */
+html[data-ytp-page="watch"] ytd-watch-flexy:not([theater]):not([full-bleed-player]) #secondary,
+html[data-ytp-page="watch"] ytd-watch-flexy:not([theater]):not([full-bleed-player]) #below { display: none !important; }
+
 html[data-ytp-page="shorts"] #masthead-container,
 html[data-ytp-page="shorts"] ytd-masthead,
 html[data-ytp-page="shorts"] tp-yt-app-drawer#guide,

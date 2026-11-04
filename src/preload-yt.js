@@ -135,9 +135,19 @@ if (role === 'video') {
       root.dataset.ytpPage = page;
     }
   };
+  // Kinomodus einschalten (YouTube merkt sich das im Cookie "wide=1")
+  let theaterTries = 0;
+  const ensureTheater = () => {
+    if (location.pathname !== '/watch') { theaterTries = 0; return; }
+    const flexy = document.querySelector('ytd-watch-flexy');
+    if (!flexy || flexy.hasAttribute('theater') || flexy.hasAttribute('full-bleed-player')) return;
+    if (theaterTries > 5) return;
+    const btn = document.querySelector('#movie_player .ytp-size-button');
+    if (btn) { theaterTries++; btn.click(); }
+  };
   document.addEventListener('DOMContentLoaded', mark);
-  document.addEventListener('yt-navigate-finish', mark);
-  setInterval(mark, 500);
+  document.addEventListener('yt-navigate-finish', () => { theaterTries = 0; mark(); });
+  setInterval(() => { mark(); ensureTheater(); }, 500);
 }
 
 if (role === 'comments') {
