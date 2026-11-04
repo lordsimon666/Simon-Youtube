@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self'">
+  <title>Einstellungen</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="settings">
+    <h1>Einstellungen</h1>
+
+    <fieldset>
+      <legend>Lautstärke-Ausgleich (Auto-Level)</legend>
+      <p class="desc">YouTube macht laute Videos automatisch leiser (Lautstärke-Normalisierung). Hier kannst du das ausschalten oder selbst einstellen.</p>
+      <label class="opt"><input type="radio" name="volumeMode" value="auto"> Auto – wie YouTube</label>
+      <label class="opt"><input type="radio" name="volumeMode" value="off"> Aus – immer volle Reglerlautstärke</label>
+      <label class="opt"><input type="radio" name="volumeMode" value="custom"> Eigene Stärke</label>
+      <div class="range" id="strength-row">
+        <input type="range" id="volumeStrength" min="0" max="100" step="5">
+        <output id="strength-out">50 %</output>
+      </div>
+      <p class="desc" style="margin:8px 0 0 26px">0 % = kein Ausgleich, 100 % = so stark wie YouTube.</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Videoqualität</legend>
+      <p class="desc">Auto lässt YouTube wählen. Sonst wird die gewählte Qualität (oder die nächstniedrigere verfügbare) erzwungen.</p>
+      <select id="quality">
+        <option value="auto">Auto</option>
+        <option value="hd2160">2160p (4K)</option>
+        <option value="hd1440">1440p</option>
+        <option value="hd1080">1080p</option>
+        <option value="hd720">720p</option>
+        <option value="large">480p</option>
+        <option value="medium">360p</option>
+        <option value="small">240p</option>
+        <option value="tiny">144p</option>
+      </select>
+    </fieldset>
+
+    <div class="foot">Änderungen gelten sofort für das Video-Panel und werden gespeichert.</div>
+  </div>
+  <script src="settings.js"></script>
+</body>
+</html>

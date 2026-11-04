@@ -17,6 +17,13 @@ YouTube als Desktop-App mit **vier Panels**:
 - Klick auf einen Vorschlag im Kommentar-Panel spielt ihn ab, Klick auf einen Zeitstempel in einem Kommentar springt zu dieser Stelle.
 - Shorts: im Video-Panel einfach scrollen – die Kommentare wandern automatisch mit.
 - Die Trennlinien zwischen den Panels lassen sich ziehen (Doppelklick = zurücksetzen).
+- **⊞ In 4 Fenster aufteilen** (oben): Jedes Panel bekommt sein eigenes Fenster (z. B. für mehrere Monitore).
+  Beim ersten Mal wird der Bildschirm in vier Viertel geteilt, danach merkt sich die App die Fensterpositionen.
+  **⊟ Zusammenfügen** oder das Schließen eines der Fenster holt alles wieder in ein Fenster.
+- **⚙ Einstellungen**:
+  - **Lautstärke-Ausgleich (Auto-Level)**: *Auto* (wie YouTube), *Aus* (keine Normalisierung, immer die eingestellte
+    Reglerlautstärke) oder *Eigene Stärke* 0–100 %.
+  - **Videoqualität**: *Auto* oder feste Auflösung (144p … 4K). Ist die gewählte nicht verfügbar, wird die nächstniedrigere genommen.
 - Oben rechts: **Anmelden** / **Abmelden**. Beim allerersten Start erscheint ein Anmeldefenster, dort kann man auch **„Ohne Anmeldung fortfahren“** wählen.
 
 ## Downloads

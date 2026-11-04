@@ -85,6 +85,18 @@ $('#btn-logout').addEventListener('click', () => {
   if (confirm('Wirklich abmelden? Cookies und Anmeldedaten werden gelöscht.')) api.logout();
 });
 
+// ---------------------------------------------------------------- 4 Fenster / Einstellungen
+function setSplit(on) {
+  document.body.classList.toggle('split', !!on);
+  const b = $('#btn-split');
+  b.querySelector('.ico').textContent = on ? '\u229F' : '\u229E';
+  b.querySelector('.lbl').textContent = on ? 'Zusammenfügen' : 'In 4 Fenster aufteilen';
+  b.title = on ? 'Alle Panels wieder in einem Fenster anzeigen' : 'Die vier Panels als eigene Fenster öffnen';
+  queueLayout();
+}
+$('#btn-split').addEventListener('click', () => api.toggleSplit());
+$('#btn-settings').addEventListener('click', () => api.openSettings());
+
 // ---------------------------------------------------------------- Browser-Navigation
 for (const b of document.querySelectorAll('[data-nav]')) {
   b.addEventListener('click', () => api.browserNav(b.dataset.nav));
@@ -200,6 +212,8 @@ api.on('later:list', renderLater);
 api.on('auth:state', setAuth);
 api.on('now-playing', setNow);
 api.on('toast', showToast);
+api.on('split:state', setSplit);
+api.on('comments-tab', setTab);
 
 api.getState().then((s) => {
   splits = { ...splits, ...(s.splits || {}) };
@@ -208,5 +222,6 @@ api.getState().then((s) => {
   setAuth({ loggedIn: !!s.loggedIn });
   setTab(s.commentsTab || 'comments');
   setNow(s.nowPlaying);
+  setSplit(s.splitMode);
   sendLayout();
 });

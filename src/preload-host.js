@@ -2,7 +2,7 @@
 // Preload für die eigene Oberfläche (Hauptfenster + Willkommensfenster).
 const { contextBridge, ipcRenderer } = require('electron');
 
-const EVENTS = new Set(['later:list', 'auth:state', 'now-playing', 'toast']);
+const EVENTS = new Set(['later:list', 'auth:state', 'now-playing', 'toast', 'split:state', 'comments-tab']);
 
 contextBridge.exposeInMainWorld('api', {
   getState: () => ipcRenderer.invoke('state:get'),
@@ -17,6 +17,10 @@ contextBridge.exposeInMainWorld('api', {
   browserNav: (cmd) => ipcRenderer.send('browser:nav', cmd),
   setCommentsTab: (tab) => ipcRenderer.send('comments:tab', tab),
   welcomeChoice: (choice) => ipcRenderer.send('welcome:choice', choice),
+  toggleSplit: () => ipcRenderer.send('split:toggle'),
+  openSettings: () => ipcRenderer.send('settings:open'),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  setSettings: (s) => ipcRenderer.send('settings:set', s),
   on: (channel, cb) => {
     if (!EVENTS.has(channel)) return;
     ipcRenderer.on(channel, (_e, ...args) => cb(...args));

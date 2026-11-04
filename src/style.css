@@ -161,6 +161,21 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .later-item:hover .later-remove { opacity: 1; }
 .later-remove:hover { background: #3a3a3a; color: var(--text); }
 
+/* ---------- Kopfzeilen-Buttons */
+.btn .ico { font-size: 15px; line-height: 1; }
+.btn.icon { width: 32px; height: 32px; padding: 0; font-size: 17px; display: inline-flex; align-items: center; justify-content: center; }
+#btn-split { display: inline-flex; align-items: center; gap: 4px; }
+
+/* ---------- 4-Fenster-Modus: Hauptfenster zeigt nur "Später ansehen" */
+body.split #col-left,
+body.split #panel-comments,
+body.split .gutter { display: none; }
+body.split #col-right { flex: 1 1 0; }
+body.split #panel-later { flex: 1 1 0; }
+body.split .auth-status { display: none; }
+body.split .brand-text { display: none; }
+body.split .topbar { gap: 6px; padding: 0 8px; }
+
 /* ---------- Toast */
 .toast {
   position: fixed; left: 50%; bottom: 18px; transform: translate(-50%, 20px);
@@ -184,3 +199,25 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .welcome .actions { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 300px; margin-top: 10px; }
 .welcome .btn { padding: 10px 16px; font-size: 14px; }
 .welcome small { color: var(--muted); margin-top: 6px; }
+
+/* ---------- Einstellungen */
+.settings { padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; height: 100%; overflow-y: auto; background: var(--panel); user-select: none; }
+.settings h1 { margin: 0; font-size: 19px; }
+.settings fieldset { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px 14px; margin: 0; }
+.settings legend { padding: 0 6px; font-weight: 700; }
+.settings .desc { color: var(--muted); font-size: 12px; margin: 2px 0 10px; }
+.settings label.opt { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; }
+.settings input[type=radio] { accent-color: var(--accent); }
+.settings .range { display: flex; align-items: center; gap: 10px; margin: 6px 0 0 26px; }
+.settings .range input { flex: 1; accent-color: var(--accent); }
+.settings .range output { width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+.settings .range.disabled { opacity: .4; }
+.settings select {
+  width: 100%; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border);
+  background: #262626; color: var(--text); font: inherit;
+}
+.settings .foot { color: var(--muted); font-size: 12px; margin-top: auto; }
+
+/* ---------- Einzelfenster im 4-Fenster-Modus (nur Kopfzeile, darunter die Webansicht) */
+body.panel-window { background: var(--head); }
+body.panel-window .panel-head { height: 36px; }

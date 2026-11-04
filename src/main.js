@@ -39,7 +39,12 @@ const store = {
   commentsTab: 'comments',
   bounds: null,
   maximized: false,
+  settings: {},
+  splitMode: false,
+  splitBounds: {},
 };
+const DEFAULT_SETTINGS = { volumeMode: 'auto', volumeStrength: 50, quality: 'auto' };
+const QUALITIES = ['auto', 'hd2160', 'hd1440', 'hd1080', 'hd720', 'large', 'medium', 'small', 'tiny'];
 let storePath = '';
 let saveTimer = null;
 
@@ -50,6 +55,8 @@ function loadStore() {
     Object.assign(store, data);
     if (!Array.isArray(store.watchLater)) store.watchLater = [];
     store.splits = { ...DEFAULT_SPLITS, ...(store.splits || {}) };
+    store.settings = cleanSettings(store.settings);
+    if (!store.splitBounds || typeof store.splitBounds !== 'object') store.splitBounds = {};
   } catch { /* erster Start */ }
 }
 
@@ -161,6 +168,19 @@ let current = null;
 let commentsCssKey = null;
 let videoFullscreen = false;
 let loggedIn = false;
+let settingsWin = null;
+const hosts = {};          // Rolle -> eigenes Fenster im 4-Fenster-Modus
+let splitMode = false;
+let merging = false;
+let quitting = false;
+let preSplit = null;       // Hauptfenster-Größe vor dem Aufteilen
+
+const HOST_HEADER = 36;    // Höhe der Kopfzeile in den Einzelfenstern
+const PANEL_TITLES = {
+  video: 'Video – Simon YouTube',
+  browser: 'Browser – Simon YouTube',
+  comments: 'Kommentare & Vorschläge – Simon YouTube',
+};
 
 const ytSession = () => session.fromPartition(PARTITION);
 
@@ -172,7 +192,9 @@ function roleOf(sender) {
 }
 
 function sendUI(channel, ...args) {
-  if (win && !win.isDestroyed()) win.webContents.send(channel, ...args);
+  for (const w of [win, ...Object.values(hosts)]) {
+    if (w && !w.isDestroyed()) w.webContents.send(channel, ...args);
+  }
 }
 
 function toast(msg) { sendUI('toast', msg); }
@@ -216,6 +238,7 @@ function createView(role) {
   wc.on('will-navigate', guard);
   wc.on('will-redirect', guard);
   wc.on('dom-ready', () => injectCss(role));
+  if (role === 'video') wc.on('dom-ready', applyPlayerSettings);
 
   if (role === 'browser' || role === 'comments') wc.setAudioMuted(true);
 
@@ -266,11 +289,26 @@ function setCommentsTab(tab) {
   commentsCssKey = null;
   if (old) wc.removeInsertedCSS(old).catch(() => {});
   wc.insertCSS(CSS.tabs[tab]).then((k) => { commentsCssKey = k; }).catch(() => {});
+  sendUI('comments-tab', tab);
   wc.executeJavaScript('window.scrollTo(0, 0)').catch(() => {});
+}
+
+function fitToHost(role) {
+  const h = hosts[role];
+  if (!h || h.isDestroyed()) return;
+  const [w, hh] = h.getContentSize();
+  // Bei Vollbild-Video die Kopfzeile überdecken
+  const top = role === 'video' && videoFullscreen ? 0 : HOST_HEADER;
+  views[role].setBounds({ x: 0, y: top, width: w, height: Math.max(0, hh - top) });
+  views[role].setVisible(true);
 }
 
 function layoutViews() {
   if (!win || win.isDestroyed()) return;
+  if (splitMode) {
+    for (const role of Object.keys(hosts)) fitToHost(role);
+    return;
+  }
   if (videoFullscreen && views.video) {
     const [w, h] = win.getContentSize();
     views.browser.setVisible(false);
@@ -502,11 +540,27 @@ function createWindow() {
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.on('resize', layoutViews);
   win.on('close', () => {
-    store.maximized = win.isMaximized();
-    store.bounds = win.getNormalBounds();
+    quitting = true;
+    store.splitMode = splitMode;
+    if (splitMode) {
+      store.splitBounds.later = win.getNormalBounds();
+      for (const [role, h] of Object.entries(hosts)) {
+        if (!h.isDestroyed()) store.splitBounds[role] = h.getNormalBounds();
+      }
+      store.bounds = preSplit ? preSplit.bounds : store.bounds;
+      store.maximized = preSplit ? preSplit.maximized : false;
+    } else {
+      store.maximized = win.isMaximized();
+      store.bounds = win.getNormalBounds();
+    }
     writeStore();
   });
-  win.on('closed', () => { win = null; });
+  win.on('closed', () => {
+    win = null;
+    for (const h of Object.values(hosts)) if (!h.isDestroyed()) h.destroy();
+    for (const w of [settingsWin, loginWin, welcomeWin]) if (w && !w.isDestroyed()) w.destroy();
+    app.quit();
+  });
 
   win.loadFile(path.join(__dirname, 'index.html'));
 
@@ -520,13 +574,154 @@ function createWindow() {
 
   win.once('ready-to-show', () => {
     win.show();
+    if (store.splitMode) splitWindows();
     if (!store.firstRunDone) showWelcome();
   });
 }
 
+// ---------------------------------------------------------------- 4 Fenster
+function splitWindows() {
+  if (splitMode || !win) return;
+  splitMode = true;
+  preSplit = { bounds: win.getNormalBounds(), maximized: win.isMaximized() };
+  if (win.isFullScreen()) win.setFullScreen(false);
+  if (win.isMaximized()) win.unmaximize();
+
+  // Standard: Bildschirm in vier Viertel teilen (wie das normale Layout)
+  const area = screen.getDisplayMatching(win.getBounds()).workArea;
+  const hw = Math.floor(area.width / 2);
+  const hh = Math.floor(area.height / 2);
+  const quad = {
+    video: { x: area.x, y: area.y },
+    comments: { x: area.x + hw, y: area.y },
+    browser: { x: area.x, y: area.y + hh },
+    later: { x: area.x + hw, y: area.y + hh },
+  };
+  const boundsFor = (role) => {
+    const saved = validBounds(store.splitBounds[role]);
+    return saved && typeof saved.x === 'number' ? saved : { ...quad[role], width: hw, height: hh };
+  };
+
+  for (const role of ['video', 'comments', 'browser']) {
+    const h = new BrowserWindow({
+      ...boundsFor(role),
+      minWidth: 320,
+      minHeight: 240,
+      title: PANEL_TITLES[role],
+      backgroundColor: '#0f0f0f',
+      icon: iconPath(),
+      autoHideMenuBar: true,
+      show: false,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload-host.js'),
+        contextIsolation: true,
+        sandbox: true,
+      },
+    });
+    h.setMenuBarVisibility(false);
+    h.webContents.on('will-navigate', (ev) => ev.preventDefault());
+    h.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    h.loadFile(path.join(__dirname, 'panel.html'), { query: { role } });
+    win.contentView.removeChildView(views[role]);
+    h.contentView.addChildView(views[role]);
+    hosts[role] = h;
+    fitToHost(role);
+    h.on('resize', () => fitToHost(role));
+    // Schließt man eines der Fenster, wird alles wieder zusammengefügt
+    h.on('close', () => {
+      if (quitting || merging) return;
+      store.splitBounds[role] = h.getNormalBounds();
+      mergeWindows();
+    });
+    h.showInactive();
+  }
+
+  win.setMinimumSize(320, 300);
+  win.setBounds(boundsFor('later'));
+  store.splitMode = true;
+  saveStore();
+  sendUI('split:state', true);
+  win.focus();
+}
+
+function mergeWindows() {
+  if (!splitMode || !win) return;
+  merging = true;
+  splitMode = false;
+  store.splitBounds.later = win.getNormalBounds();
+  for (const role of ['browser', 'video', 'comments']) {
+    const h = hosts[role];
+    if (h && !h.isDestroyed()) {
+      store.splitBounds[role] = h.getNormalBounds();
+      h.contentView.removeChildView(views[role]);
+    }
+    win.contentView.addChildView(views[role]);
+  }
+  for (const [role, h] of Object.entries(hosts)) {
+    delete hosts[role];
+    if (!h.isDestroyed()) h.destroy();
+  }
+  win.setMinimumSize(960, 600);
+  if (preSplit) {
+    win.setBounds(validBounds(preSplit.bounds) || { width: 1500, height: 920 });
+    if (preSplit.maximized) win.maximize();
+  }
+  preSplit = null;
+  merging = false;
+  store.splitMode = false;
+  saveStore();
+  sendUI('split:state', false);
+  layoutViews();
+  win.focus();
+}
+
+// ---------------------------------------------------------------- Einstellungen
+function cleanSettings(s) {
+  const out = { ...DEFAULT_SETTINGS, ...(s && typeof s === 'object' ? s : {}) };
+  if (!['auto', 'off', 'custom'].includes(out.volumeMode)) out.volumeMode = DEFAULT_SETTINGS.volumeMode;
+  out.volumeStrength = Math.round(Math.min(100, Math.max(0, Number(out.volumeStrength))));
+  if (!Number.isFinite(out.volumeStrength)) out.volumeStrength = DEFAULT_SETTINGS.volumeStrength;
+  if (!QUALITIES.includes(out.quality)) out.quality = DEFAULT_SETTINGS.quality;
+  return out;
+}
+
+function applyPlayerSettings() {
+  const wc = views.video && views.video.webContents;
+  if (!wc || wc.isDestroyed()) return;
+  const url = wc.getURL();
+  if (!isYoutubeUrl(url)) return;
+  wc.executeJavaScript(CSS.playerScript(store.settings)).catch(() => {});
+}
+
+function openSettings() {
+  if (settingsWin && !settingsWin.isDestroyed()) { settingsWin.focus(); return; }
+  settingsWin = new BrowserWindow({
+    parent: win || undefined,
+    width: 480,
+    height: 560,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    title: 'Einstellungen',
+    autoHideMenuBar: true,
+    backgroundColor: '#181818',
+    icon: iconPath(),
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload-host.js'),
+      contextIsolation: true,
+      sandbox: true,
+    },
+  });
+  settingsWin.setMenuBarVisibility(false);
+  settingsWin.once('ready-to-show', () => settingsWin && settingsWin.show());
+  settingsWin.on('closed', () => { settingsWin = null; });
+  settingsWin.loadFile(path.join(__dirname, 'settings.html'));
+}
+
 // ---------------------------------------------------------------- IPC
 function fromHost(e) {
-  return (win && e.sender === win.webContents) || (welcomeWin && e.sender === welcomeWin.webContents);
+  return [win, welcomeWin, settingsWin, ...Object.values(hosts)].some((w) => w && !w.isDestroyed() && e.sender === w.webContents);
 }
 
 ipcMain.on('yt:role', (e) => { e.returnValue = roleOf(e.sender) || ''; });
@@ -552,7 +747,22 @@ ipcMain.handle('state:get', () => ({
   splits: store.splits,
   commentsTab: store.commentsTab,
   nowPlaying: current,
+  splitMode,
 }));
+
+ipcMain.on('split:toggle', (e) => {
+  if (!fromHost(e)) return;
+  if (splitMode) mergeWindows(); else splitWindows();
+});
+
+ipcMain.on('settings:open', (e) => { if (fromHost(e)) openSettings(); });
+ipcMain.handle('settings:get', () => store.settings);
+ipcMain.on('settings:set', (e, s) => {
+  if (!fromHost(e)) return;
+  store.settings = cleanSettings({ ...store.settings, ...(s || {}) });
+  saveStore();
+  applyPlayerSettings();
+});
 
 ipcMain.on('layout:bounds', (e, bounds) => {
   if (!win || e.sender !== win.webContents || !bounds) return;
