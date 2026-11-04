@@ -148,6 +148,11 @@ var I18N = (function () {
       'set.layout': 'Panel-Anordnung',
       'set.layout.desc': 'Panels lassen sich an ihrem Griff (⠿) in der Kopfzeile auf ein anderes Panel ziehen, um die Plätze zu tauschen. Die Trennlinien ändern die Größe.',
       'set.layout.reset': 'Anordnung und Größen zurücksetzen',
+      'tgl.browser': 'Browser',
+      'tgl.comments': 'Kommentare',
+      'tgl.later': 'Später',
+      'tgl.title': 'Panel ein-/ausblenden (der Player bleibt immer sichtbar)',
+      'win.later': 'Später ansehen – Simon YouTube',
     },
     en: {
       'top.split': 'Split into 4 windows',
@@ -287,6 +292,11 @@ var I18N = (function () {
       'set.layout': 'Panel layout',
       'set.layout.desc': 'Drag a panel by its handle (⠿) in the header onto another panel to swap places. The dividers change the size.',
       'set.layout.reset': 'Reset layout and sizes',
+      'tgl.browser': 'Browser',
+      'tgl.comments': 'Comments',
+      'tgl.later': 'Later',
+      'tgl.title': 'Show/hide panel (the player always stays visible)',
+      'win.later': 'Watch later – Simon YouTube',
     },
   };
 

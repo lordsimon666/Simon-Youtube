@@ -23,9 +23,12 @@ YouTube als Desktop-App mit **vier Panels**:
 - **Panels verschieben**: Am Griff **⠿** in der Kopfzeile ein Panel auf ein anderes ziehen → die beiden tauschen die Plätze.
   Die Anordnung wird gespeichert (zurücksetzen unter ⚙ Einstellungen).
 - Die Trennlinien zwischen den Panels lassen sich ziehen (Doppelklick = zurücksetzen).
-- **⊞ In 4 Fenster aufteilen** (oben): Jedes Panel bekommt sein eigenes Fenster (z. B. für mehrere Monitore).
-  Beim ersten Mal wird der Bildschirm in vier Viertel geteilt, danach merkt sich die App die Fensterpositionen.
-  **⊟ Zusammenfügen** oder das Schließen eines der Fenster holt alles wieder in ein Fenster.
+- **Panels ein-/ausblenden**: Mit den Knöpfen **Browser · Kommentare · Später** oben lassen sich diese Panels
+  aus- und wieder einblenden. Der **Media-Player** (Video) bleibt immer sichtbar; die übrigen Panels füllen den Platz.
+- **⊞ In 4 Fenster aufteilen** (oben): Das Hauptfenster wird zum **Media-Player**, Browser, Kommentare und
+  Später ansehen bekommen eigene Fenster (z. B. für mehrere Monitore). Beim ersten Mal wird der Bildschirm in vier
+  Viertel geteilt, danach merkt sich die App die Fensterpositionen. Das **X** an einem dieser Fenster blendet es nur aus –
+  über die Knöpfe oben im Player kommt es zurück. **⊟ Zusammenfügen** holt alles wieder in ein Fenster.
 - **Sprache / Language**: Deutsch oder English – im Willkommensfenster oder unter ⚙ Einstellungen, wird sofort
   umgeschaltet. Beim ersten Start wird die Systemsprache genommen.
 - **⚙ Einstellungen**:

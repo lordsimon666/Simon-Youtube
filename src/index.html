@@ -15,6 +15,11 @@
       <button type="submit" class="addr-btn" id="addr-play" data-i18n-title="addr.play">&#9654;</button>
       <button type="button" class="addr-btn" id="addr-later" data-i18n-title="addr.later">+</button>
     </form>
+    <div class="toggles" role="group">
+      <button class="tgl" data-panel="browser" data-i18n-title="tgl.title"><span class="dot"></span><span data-i18n="tgl.browser"></span></button>
+      <button class="tgl" data-panel="comments" data-i18n-title="tgl.title"><span class="dot"></span><span data-i18n="tgl.comments"></span></button>
+      <button class="tgl" data-panel="later" data-i18n-title="tgl.title"><span class="dot"></span><span data-i18n="tgl.later"></span></button>
+    </div>
     <button id="btn-split" class="btn">
       <span class="ico">&#8862;</span> <span class="lbl"></span>
     </button>
@@ -90,6 +95,7 @@
 
   <div id="toast" class="toast" role="status"></div>
   <script src="i18n.js"></script>
+  <script src="later.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

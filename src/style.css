@@ -208,9 +208,10 @@ body.dragging-panel .pos.drop-target .panel::after {
 #btn-split { display: inline-flex; align-items: center; gap: 4px; }
 
 /* ---------- 4-Fenster-Modus: Hauptfenster zeigt nur "Später ansehen" */
+/* 4-Fenster-Modus: Hauptfenster = Media-Player */
 body.split .gutter,
-body.split .col:not(:has(#panel-later)),
-body.split .pos:not(:has(#panel-later)) { display: none; }
+body.split .col:not(:has(#panel-video)),
+body.split .pos:not(:has(#panel-video)) { display: none; }
 body.split .col, body.split .pos { flex: 1 1 0; }
 body.split .grip { display: none; }
 body.split .auth-status { display: none; }
@@ -298,3 +299,36 @@ body.panel-window .panel-head { height: 36px; }
 }
 .lang-btn:hover { background: var(--hover); color: var(--text); }
 .lang-btn.active { background: var(--text); color: #0f0f0f; border-color: var(--text); }
+
+/* ---------- Panels ein-/ausblenden */
+.is-hidden { display: none !important; }
+.toggles { display: flex; gap: 2px; background: #161616; border: 1px solid var(--border); border-radius: 999px; padding: 2px; flex: none; }
+.tgl {
+  display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--muted);
+  border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 600;
+}
+.tgl:hover { background: var(--hover); color: var(--text); }
+.tgl .dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; box-sizing: border-box; }
+.tgl.on { color: var(--text); }
+.tgl.on .dot { background: var(--accent); border-color: var(--accent); }
+
+/* Toast in der Kopfzeile, wenn "Später ansehen" nicht sichtbar ist */
+.toast.in-top { top: 7px; bottom: auto; left: 50%; right: auto; transform: translate(-50%, -6px); padding: 6px 14px; }
+.toast.in-top.show { transform: translate(-50%, 0); }
+
+/* ---------- "Später ansehen" als eigenes Fenster */
+body.panel-window.role-later { display: flex; flex-direction: column; height: 100vh; background: var(--panel); }
+body.panel-window.role-later .later-list { flex: 1; }
+
+/* schmale Kopfzeile: Texte der Knöpfe kürzen */
+@media (max-width: 1250px) {
+  #btn-split .lbl, .auth-status { display: none; }
+}
+@media (max-width: 1000px) {
+  .brand-text { display: none; }
+  .tgl { padding: 4px 8px; gap: 4px; }
+}
+@media (max-width: 680px) {
+  .tgl span:not(.dot) { display: none; }
+  .tgl { padding: 6px 8px; }
+}

@@ -44,7 +44,9 @@ const store = {
   splitMode: false,
   splitBounds: {},
   panelOrder: null,
+  hidden: { browser: false, comments: false, later: false },
 };
+const HIDEABLE = ['browser', 'comments', 'later']; // der Media-Player (video) bleibt immer sichtbar
 const DEFAULT_ORDER = { tl: 'panel-video', bl: 'panel-browser', tr: 'panel-comments', br: 'panel-later' };
 function cleanOrder(o) {
   if (!o || typeof o !== 'object') return { ...DEFAULT_ORDER };
@@ -90,6 +92,8 @@ function loadStore() {
   } catch { /* erster Start */ }
   store.settings = cleanSettings(store.settings);
   store.panelOrder = cleanOrder(store.panelOrder);
+  const h = store.hidden && typeof store.hidden === 'object' ? store.hidden : {};
+  store.hidden = Object.fromEntries(HIDEABLE.map((k) => [k, !!h[k]]));
 }
 
 function writeStore() {
@@ -334,7 +338,7 @@ function setCommentsTab(tab) {
 
 function fitToHost(role) {
   const h = hosts[role];
-  if (!h || h.isDestroyed()) return;
+  if (!h || h.isDestroyed() || !views[role]) return;
   const [w, hh] = h.getContentSize();
   // Bei Vollbild-Video die Kopfzeile überdecken
   const top = role === 'video' && videoFullscreen ? 0 : HOST_HEADER;
@@ -350,19 +354,17 @@ function layoutViews() {
     for (const role of ['browser', 'video', 'comments']) if (views[role]) views[role].setVisible(false);
     return;
   }
-  if (splitMode) {
-    for (const role of Object.keys(hosts)) fitToHost(role);
-    return;
-  }
+  if (splitMode) for (const role of Object.keys(hosts)) fitToHost(role);
+  // Im 4-Fenster-Modus liegt nur der Player im Hauptfenster
+  const mainRoles = splitMode ? ['video'] : ['browser', 'video', 'comments'];
   if (videoFullscreen && views.video) {
     const [w, h] = win.getContentSize();
-    views.browser.setVisible(false);
-    views.comments.setVisible(false);
+    for (const role of mainRoles) if (role !== 'video') views[role].setVisible(false);
     views.video.setVisible(true);
     views.video.setBounds({ x: 0, y: 0, width: w, height: h });
     return;
   }
-  for (const role of ['browser', 'video', 'comments']) {
+  for (const role of mainRoles) {
     const view = views[role];
     const b = slotBounds[role];
     if (!view) continue;
@@ -373,6 +375,21 @@ function layoutViews() {
       view.setVisible(false);
     }
   }
+}
+
+// ---------------------------------------------------------------- Panels ein-/ausblenden
+function setHidden(name, value) {
+  if (!HIDEABLE.includes(name)) return;
+  store.hidden[name] = !!value;
+  saveStore();
+  if (splitMode) {
+    const h = hosts[name];
+    if (h && !h.isDestroyed()) {
+      if (value) h.hide();
+      else { h.showInactive(); fitToHost(name); }
+    }
+  }
+  sendUI('panels:hidden', store.hidden);
 }
 
 // ---------------------------------------------------------------- Abspielen
@@ -707,7 +724,7 @@ function createWindow() {
     quitting = true;
     store.splitMode = splitMode;
     if (splitMode) {
-      store.splitBounds.later = win.getNormalBounds();
+      store.splitBounds.video = win.getNormalBounds();
       for (const [role, h] of Object.entries(hosts)) {
         if (!h.isDestroyed()) store.splitBounds[role] = h.getNormalBounds();
       }
@@ -743,6 +760,8 @@ function createWindow() {
 }
 
 // ---------------------------------------------------------------- 4 Fenster
+const SPLIT_ROLES = ['comments', 'browser', 'later']; // eigene Fenster; der Player bleibt im Hauptfenster
+
 function splitWindows() {
   if (splitMode || !win) return;
   splitMode = true;
@@ -765,7 +784,7 @@ function splitWindows() {
     return saved && typeof saved.x === 'number' ? saved : { ...quad[role], width: hw, height: hh };
   };
 
-  for (const role of ['video', 'comments', 'browser']) {
+  for (const role of SPLIT_ROLES) {
     const h = new BrowserWindow({
       ...boundsFor(role),
       minWidth: 320,
@@ -782,28 +801,33 @@ function splitWindows() {
       },
     });
     h.setMenuBarVisibility(false);
+    h.on('page-title-updated', (ev) => ev.preventDefault());
     h.webContents.on('will-navigate', (ev) => ev.preventDefault());
     h.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     h.loadFile(path.join(__dirname, 'panel.html'), { query: { role } });
-    win.contentView.removeChildView(views[role]);
-    h.contentView.addChildView(views[role]);
+    if (views[role]) {
+      win.contentView.removeChildView(views[role]);
+      h.contentView.addChildView(views[role]);
+    }
     hosts[role] = h;
     fitToHost(role);
     h.on('resize', () => fitToHost(role));
-    // Schließt man eines der Fenster, wird alles wieder zusammengefügt
-    h.on('close', () => {
+    // Schließen (X) blendet das Fenster nur aus – wieder einblenden über die Knöpfe oben im Player
+    h.on('close', (ev) => {
       if (quitting || merging) return;
+      ev.preventDefault();
       store.splitBounds[role] = h.getNormalBounds();
-      mergeWindows();
+      setHidden(role, true);
     });
-    h.showInactive();
+    if (!store.hidden[role]) h.showInactive();
   }
 
-  win.setMinimumSize(320, 300);
-  win.setBounds(boundsFor('later'));
+  win.setMinimumSize(480, 320);
+  win.setBounds(boundsFor('video'));
   store.splitMode = true;
   saveStore();
   sendUI('split:state', true);
+  layoutViews();
   win.focus();
 }
 
@@ -811,13 +835,17 @@ function mergeWindows() {
   if (!splitMode || !win) return;
   merging = true;
   splitMode = false;
-  store.splitBounds.later = win.getNormalBounds();
-  for (const role of ['browser', 'video', 'comments']) {
+  store.splitBounds.video = win.getNormalBounds();
+  for (const role of SPLIT_ROLES) {
     const h = hosts[role];
     if (h && !h.isDestroyed()) {
       store.splitBounds[role] = h.getNormalBounds();
-      h.contentView.removeChildView(views[role]);
+      if (views[role]) h.contentView.removeChildView(views[role]);
     }
+  }
+  // Reihenfolge der Ebenen wie beim Start
+  for (const role of ['browser', 'video', 'comments']) {
+    win.contentView.removeChildView(views[role]);
     win.contentView.addChildView(views[role]);
   }
   for (const [role, h] of Object.entries(hosts)) {
@@ -937,7 +965,13 @@ ipcMain.handle('state:get', () => ({
   lang: store.settings.lang,
   splitMode,
   panelOrder: store.panelOrder,
+  hidden: store.hidden,
 }));
+
+ipcMain.on('panel:toggle', (e, name) => {
+  if (!fromHost(e) || !HIDEABLE.includes(name)) return;
+  setHidden(name, !store.hidden[name]);
+});
 
 // ---------------------------------------------------------------- Adressleiste
 function normalizeAddress(text) {

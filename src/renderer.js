@@ -1,5 +1,5 @@
 'use strict';
-/* global api, I18N */
+/* global api, I18N, renderLaterList */
 let lang = 'de';
 const L = (key, vars) => I18N.t(lang, key, vars);
 const last = { auth: { loggedIn: false }, split: false, now: null, items: [] };
@@ -85,6 +85,7 @@ function applyOrder(order) {
   for (const [pos, id] of Object.entries(o)) {
     document.querySelector(`.pos[data-pos="${pos}"]`).append(document.getElementById(id));
   }
+  if (typeof updateVisibility === 'function') updateVisibility();
   queueLayout();
 }
 
@@ -135,9 +136,39 @@ for (const pos of document.querySelectorAll('.pos')) {
     srcPos.append(dst);
     pos.append(src);
     api.savePanelOrder(currentOrder());
-    queueLayout();
+    updateVisibility();
   });
 }
+
+// ---------------------------------------------------------------- Panels ein-/ausblenden
+// Der Media-Player (Video) ist immer sichtbar.
+let hidden = { browser: false, comments: false, later: false };
+
+function updateVisibility() {
+  for (const pos of document.querySelectorAll('.pos')) {
+    const key = pos.querySelector('.panel').id.replace('panel-', '');
+    pos.classList.toggle('is-hidden', key !== 'video' && !!hidden[key]);
+  }
+  let colHidden = false;
+  for (const col of document.querySelectorAll('.col')) {
+    const vis = [...col.querySelectorAll('.pos')].filter((p) => !p.classList.contains('is-hidden'));
+    col.classList.toggle('is-hidden', vis.length === 0);
+    col.querySelector('.gutter-row').classList.toggle('is-hidden', vis.length < 2);
+    if (vis.length === 0) colHidden = true;
+  }
+  document.querySelector('.gutter-col').classList.toggle('is-hidden', colHidden);
+  for (const b of document.querySelectorAll('.tgl')) {
+    const on = !hidden[b.dataset.panel];
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', String(on));
+  }
+  queueLayout();
+}
+
+for (const b of document.querySelectorAll('.tgl')) {
+  b.addEventListener('click', () => api.togglePanel(b.dataset.panel));
+}
+api.on('panels:hidden', (h) => { hidden = { ...hidden, ...h }; updateVisibility(); });
 
 // ---------------------------------------------------------------- Adressleiste
 const addrForm = $('#address');
@@ -242,60 +273,9 @@ const list = $('#later-list');
 
 function renderLater(items) {
   last.items = items;
-  list.textContent = '';
   $('#later-count').textContent = String(items.length);
   $('#btn-clear-later').hidden = items.length === 0;
-
-  if (items.length === 0) {
-    const empty = document.createElement('div');
-    empty.className = 'later-empty';
-    empty.textContent = L('later.empty');
-    list.append(empty);
-    return;
-  }
-
-  for (const item of items) {
-    const row = document.createElement('div');
-    row.className = 'later-item' + (item.type === 'short' ? ' short' : '');
-    row.title = L('later.play.title');
-
-    const thumb = document.createElement('div');
-    thumb.className = 'later-thumb';
-    const img = document.createElement('img');
-    img.loading = 'lazy';
-    img.alt = '';
-    img.src = `https://i.ytimg.com/vi/${encodeURIComponent(item.id)}/mqdefault.jpg`;
-    thumb.append(img);
-    if (item.type === 'short') {
-      const tag = document.createElement('span');
-      tag.className = 'later-type';
-      tag.textContent = 'SHORT';
-      thumb.append(tag);
-    }
-
-    const meta = document.createElement('div');
-    meta.className = 'later-meta';
-    const title = document.createElement('div');
-    title.className = 'later-title';
-    title.textContent = item.title || item.id;
-    const channel = document.createElement('div');
-    channel.className = 'later-channel';
-    channel.textContent = item.channel || '';
-    meta.append(title, channel);
-
-    const remove = document.createElement('button');
-    remove.className = 'later-remove';
-    remove.title = L('later.remove');
-    remove.textContent = '✕';
-    remove.addEventListener('click', (e) => {
-      e.stopPropagation();
-      api.removeLater(item.id);
-    });
-
-    row.append(thumb, meta, remove);
-    row.addEventListener('click', () => api.playLater(item.id));
-    list.append(row);
-  }
+  renderLaterList(list, items, L);
 }
 
 $('#btn-clear-later').addEventListener('click', () => {
@@ -308,9 +288,12 @@ let toastTimer = null;
 function showToast(msg) {
   // Toast im "Später ansehen"-Panel anzeigen (dort liegt keine Webansicht darüber)
   const panel = $('#panel-later').getBoundingClientRect();
-  toastEl.classList.add('in-later');
-  toastEl.style.bottom = (window.innerHeight - panel.bottom + 14) + 'px';
-  toastEl.style.right = (window.innerWidth - panel.right + 14) + 'px';
+  const visible = panel.width > 0 && panel.height > 0;
+  toastEl.classList.toggle('in-later', visible);
+  toastEl.classList.toggle('in-top', !visible);
+  // sonst in der Kopfzeile (über den Webansichten kann nichts angezeigt werden)
+  toastEl.style.bottom = visible ? (window.innerHeight - panel.bottom + 14) + 'px' : '';
+  toastEl.style.right = visible ? (window.innerWidth - panel.right + 14) + 'px' : '';
   toastEl.textContent = msg;
   toastEl.classList.add('show');
   clearTimeout(toastTimer);
@@ -346,7 +329,9 @@ api.getState().then((s) => {
   lang = s.lang || 'de';
   I18N.apply(lang);
   for (const p of document.querySelectorAll('.panel')) p.dataset.drop = L('drag.drop');
+  hidden = { ...hidden, ...(s.hidden || {}) };
   applyOrder(s.panelOrder);
+  updateVisibility();
   splits = { ...splits, ...(s.splits || {}) };
   applySplits();
   renderLater(s.watchLater || []);
