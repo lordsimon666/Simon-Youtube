@@ -8,26 +8,27 @@
 </head>
 <body class="panel-window">
   <div class="panel-head" data-role="video" hidden>
-    <span class="panel-title">Video</span>
+    <span class="panel-title" data-i18n="panel.video"></span>
     <span id="now-title" class="now-title"></span>
-    <button id="btn-later-current" class="btn small" title="Aktuelles Video zu „Später ansehen“ hinzufügen" hidden>+ Später</button>
+    <button id="btn-later-current" class="btn small" data-i18n="later.addCurrent" data-i18n-title="later.addCurrent.title" hidden></button>
   </div>
   <div class="panel-head" data-role="browser" hidden>
-    <span class="panel-title">Browser</span>
+    <span class="panel-title" data-i18n="panel.browser"></span>
     <div class="nav">
-      <button data-nav="back" title="Zurück">&#8592;</button>
-      <button data-nav="forward" title="Vor">&#8594;</button>
-      <button data-nav="reload" title="Neu laden">&#8635;</button>
-      <button data-nav="home" title="Startseite">&#8962;</button>
+      <button data-nav="back" data-i18n-title="nav.back">&#8592;</button>
+      <button data-nav="forward" data-i18n-title="nav.forward">&#8594;</button>
+      <button data-nav="reload" data-i18n-title="nav.reload">&#8635;</button>
+      <button data-nav="home" data-i18n-title="nav.home">&#8962;</button>
     </div>
-    <span class="hint">Klick = abspielen · Mittelklick = später ansehen</span>
+    <span class="hint" data-i18n="browser.hint"></span>
   </div>
   <div class="panel-head" data-role="comments" hidden>
     <div class="tabs">
-      <button class="tab active" data-tab="comments">Kommentare</button>
-      <button class="tab" data-tab="related">Vorschläge</button>
+      <button class="tab active" data-tab="comments" data-i18n="tab.comments"></button>
+      <button class="tab" data-tab="related" data-i18n="tab.related"></button>
     </div>
   </div>
+  <script src="i18n.js"></script>
   <script src="panel.js"></script>
 </body>
 </html>

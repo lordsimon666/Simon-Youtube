@@ -20,6 +20,8 @@ YouTube als Desktop-App mit **vier Panels**:
 - **⊞ In 4 Fenster aufteilen** (oben): Jedes Panel bekommt sein eigenes Fenster (z. B. für mehrere Monitore).
   Beim ersten Mal wird der Bildschirm in vier Viertel geteilt, danach merkt sich die App die Fensterpositionen.
   **⊟ Zusammenfügen** oder das Schließen eines der Fenster holt alles wieder in ein Fenster.
+- **Sprache / Language**: Deutsch oder English – im Willkommensfenster oder unter ⚙ Einstellungen, wird sofort
+  umgeschaltet. Beim ersten Start wird die Systemsprache genommen.
 - **⚙ Einstellungen**:
   - **Lautstärke-Ausgleich (Auto-Level)**: *Auto* (wie YouTube), *Aus* (keine Normalisierung, immer die eingestellte
     Reglerlautstärke) oder *Eigene Stärke* 0–100 %.

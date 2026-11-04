@@ -247,3 +247,13 @@ body.panel-window .panel-head { height: 36px; }
 .bar b { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #fff; opacity: .8; }
 .meter-state { color: var(--muted); font-size: 11px; text-align: right; }
 .meters.idle .bar b { display: none; }
+
+/* ---------- Sprachauswahl im Willkommensfenster */
+.welcome { position: relative; }
+.lang-switch { position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; }
+.lang-btn {
+  border: 1px solid var(--border); background: transparent; color: var(--muted);
+  border-radius: 999px; padding: 3px 10px; font-size: 12px;
+}
+.lang-btn:hover { background: var(--hover); color: var(--text); }
+.lang-btn.active { background: var(--text); color: #0f0f0f; border-color: var(--text); }

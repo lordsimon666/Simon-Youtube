@@ -1,5 +1,8 @@
 'use strict';
-/* global api */
+/* global api, I18N */
+let lang = 'de';
+const L = (key, vars) => I18N.t(lang, key, vars);
+const last = { auth: { loggedIn: false }, split: false, now: null, items: [] };
 
 const $ = (sel) => document.querySelector(sel);
 const root = document.documentElement;
@@ -73,25 +76,27 @@ for (const gutter of document.querySelectorAll('.gutter')) {
 
 // ---------------------------------------------------------------- Anmeldung
 function setAuth({ loggedIn }) {
+  last.auth = { loggedIn };
   $('#btn-login').hidden = loggedIn;
   $('#btn-logout').hidden = !loggedIn;
   const s = $('#auth-status');
-  s.textContent = loggedIn ? 'Angemeldet' : 'Nicht angemeldet';
+  s.textContent = loggedIn ? L('auth.in') : L('auth.out');
   s.classList.toggle('on', loggedIn);
 }
 
 $('#btn-login').addEventListener('click', () => api.login());
 $('#btn-logout').addEventListener('click', () => {
-  if (confirm('Wirklich abmelden? Cookies und Anmeldedaten werden gelöscht.')) api.logout();
+  if (confirm(L('auth.logout.confirm'))) api.logout();
 });
 
 // ---------------------------------------------------------------- 4 Fenster / Einstellungen
 function setSplit(on) {
+  last.split = !!on;
   document.body.classList.toggle('split', !!on);
   const b = $('#btn-split');
   b.querySelector('.ico').textContent = on ? '\u229F' : '\u229E';
-  b.querySelector('.lbl').textContent = on ? 'Zusammenfügen' : 'In 4 Fenster aufteilen';
-  b.title = on ? 'Alle Panels wieder in einem Fenster anzeigen' : 'Die vier Panels als eigene Fenster öffnen';
+  b.querySelector('.lbl').textContent = on ? L('top.merge') : L('top.split');
+  b.title = on ? L('top.merge.title') : L('top.split.title');
   queueLayout();
 }
 $('#btn-split').addEventListener('click', () => api.toggleSplit());
@@ -115,6 +120,7 @@ for (const t of document.querySelectorAll('.tab')) {
 
 // ---------------------------------------------------------------- Aktuelles Video
 function setNow(info) {
+  last.now = info;
   const el = $('#now-title');
   if (!info) {
     el.textContent = '';
@@ -122,7 +128,7 @@ function setNow(info) {
     return;
   }
   const prefix = info.type === 'short' ? 'Short · ' : '';
-  el.textContent = prefix + (info.title || 'Lädt …') + (info.channel ? ' — ' + info.channel : '');
+  el.textContent = prefix + (info.title || L('now.loading')) + (info.channel ? ' — ' + info.channel : '');
   el.title = el.textContent;
   $('#btn-later-current').hidden = false;
 }
@@ -132,6 +138,7 @@ $('#btn-later-current').addEventListener('click', () => api.addCurrentToLater())
 const list = $('#later-list');
 
 function renderLater(items) {
+  last.items = items;
   list.textContent = '';
   $('#later-count').textContent = String(items.length);
   $('#btn-clear-later').hidden = items.length === 0;
@@ -139,7 +146,7 @@ function renderLater(items) {
   if (items.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'later-empty';
-    empty.textContent = 'Noch nichts hier. Klicke im Browser mit der mittleren Maustaste auf ein Video, um es für später zu merken.';
+    empty.textContent = L('later.empty');
     list.append(empty);
     return;
   }
@@ -147,7 +154,7 @@ function renderLater(items) {
   for (const item of items) {
     const row = document.createElement('div');
     row.className = 'later-item' + (item.type === 'short' ? ' short' : '');
-    row.title = 'Klicken zum Abspielen';
+    row.title = L('later.play.title');
 
     const thumb = document.createElement('div');
     thumb.className = 'later-thumb';
@@ -175,7 +182,7 @@ function renderLater(items) {
 
     const remove = document.createElement('button');
     remove.className = 'later-remove';
-    remove.title = 'Entfernen';
+    remove.title = L('later.remove');
     remove.textContent = '✕';
     remove.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -189,7 +196,7 @@ function renderLater(items) {
 }
 
 $('#btn-clear-later').addEventListener('click', () => {
-  if (confirm('Alle Videos aus „Später ansehen“ entfernen?')) api.clearLater();
+  if (confirm(L('later.clear.confirm'))) api.clearLater();
 });
 
 // ---------------------------------------------------------------- Toast
@@ -208,6 +215,16 @@ function showToast(msg) {
 }
 
 // ---------------------------------------------------------------- Start
+function setLang(l) {
+  lang = l;
+  I18N.apply(lang);
+  setAuth(last.auth);
+  setSplit(last.split);
+  setNow(last.now);
+  renderLater(last.items);
+}
+
+api.on('lang', setLang);
 api.on('later:list', renderLater);
 api.on('auth:state', setAuth);
 api.on('now-playing', setNow);
@@ -216,6 +233,8 @@ api.on('split:state', setSplit);
 api.on('comments-tab', setTab);
 
 api.getState().then((s) => {
+  lang = s.lang || 'de';
+  I18N.apply(lang);
   splits = { ...splits, ...(s.splits || {}) };
   applySplits();
   renderLater(s.watchLater || []);

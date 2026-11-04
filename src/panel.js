@@ -1,5 +1,7 @@
 'use strict';
-/* global api */
+/* global api, I18N */
+let lang = 'de';
+let lastNow = null;
 // Kopfzeile der einzelnen Fenster im 4-Fenster-Modus
 const role = new URLSearchParams(location.search).get('role');
 const head = document.querySelector(`.panel-head[data-role="${role}"]`);
@@ -20,10 +22,11 @@ for (const t of document.querySelectorAll('.tab')) {
 }
 
 function setNow(info) {
+  lastNow = info;
   const el = document.getElementById('now-title');
   const btn = document.getElementById('btn-later-current');
   if (!info) { el.textContent = ''; btn.hidden = true; return; }
-  el.textContent = (info.type === 'short' ? 'Short · ' : '') + (info.title || 'Lädt …') +
+  el.textContent = (info.type === 'short' ? 'Short · ' : '') + (info.title || I18N.t(lang, 'now.loading')) +
     (info.channel ? ' — ' + info.channel : '');
   el.title = el.textContent;
   btn.hidden = false;
@@ -32,8 +35,11 @@ function setNow(info) {
 document.getElementById('btn-later-current').addEventListener('click', () => api.addCurrentToLater());
 
 api.on('now-playing', setNow);
+api.on('lang', (l) => { lang = l; I18N.apply(lang); setNow(lastNow); });
 api.on('comments-tab', setTab);
 api.getState().then((s) => {
+  lang = s.lang || 'de';
+  I18N.apply(lang);
   setTab(s.commentsTab || 'comments');
   setNow(s.nowPlaying);
 });

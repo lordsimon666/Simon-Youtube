@@ -11,60 +11,60 @@
   <header class="topbar">
     <div class="brand"><img src="../build/icon.png" alt="" class="brand-icon"><span class="brand-text">Simon YouTube</span></div>
     <div class="spacer"></div>
-    <button id="btn-split" class="btn" title="Die vier Panels als eigene Fenster öffnen">
-      <span class="ico">&#8862;</span> <span class="lbl">In 4 Fenster aufteilen</span>
+    <button id="btn-split" class="btn">
+      <span class="ico">&#8862;</span> <span class="lbl"></span>
     </button>
-    <button id="btn-settings" class="btn icon" title="Einstellungen (Lautstärke-Ausgleich, Qualität)">&#9881;</button>
-    <span id="auth-status" class="auth-status">Nicht angemeldet</span>
-    <button id="btn-login" class="btn primary">Anmelden</button>
-    <button id="btn-logout" class="btn" hidden>Abmelden</button>
+    <button id="btn-settings" class="btn icon" data-i18n-title="top.settings.title">&#9881;</button>
+    <span id="auth-status" class="auth-status"></span>
+    <button id="btn-login" class="btn primary" data-i18n="auth.login"></button>
+    <button id="btn-logout" class="btn" data-i18n="auth.logout" hidden></button>
   </header>
 
   <main id="layout">
     <div class="col" id="col-left">
       <section class="panel" id="panel-video">
         <div class="panel-head">
-          <span class="panel-title">Video</span>
+          <span class="panel-title" data-i18n="panel.video"></span>
           <span id="now-title" class="now-title"></span>
-          <button id="btn-later-current" class="btn small" title="Aktuelles Video zu „Später ansehen“ hinzufügen" hidden>+ Später</button>
+          <button id="btn-later-current" class="btn small" data-i18n="later.addCurrent" data-i18n-title="later.addCurrent.title" hidden></button>
         </div>
         <div class="slot" data-view="video"></div>
       </section>
-      <div class="gutter gutter-row" data-split="left" title="Ziehen zum Anpassen"></div>
+      <div class="gutter gutter-row" data-split="left" data-i18n-title="gutter.title"></div>
       <section class="panel" id="panel-browser">
         <div class="panel-head">
-          <span class="panel-title">Browser</span>
+          <span class="panel-title" data-i18n="panel.browser"></span>
           <div class="nav">
-            <button data-nav="back" title="Zurück">&#8592;</button>
-            <button data-nav="forward" title="Vor">&#8594;</button>
-            <button data-nav="reload" title="Neu laden">&#8635;</button>
-            <button data-nav="home" title="Startseite">&#8962;</button>
+            <button data-nav="back" data-i18n-title="nav.back">&#8592;</button>
+            <button data-nav="forward" data-i18n-title="nav.forward">&#8594;</button>
+            <button data-nav="reload" data-i18n-title="nav.reload">&#8635;</button>
+            <button data-nav="home" data-i18n-title="nav.home">&#8962;</button>
           </div>
-          <span class="hint">Klick = abspielen · Mittelklick = später ansehen</span>
+          <span class="hint" data-i18n="browser.hint"></span>
         </div>
         <div class="slot" data-view="browser"></div>
       </section>
     </div>
 
-    <div class="gutter gutter-col" data-split="col" title="Ziehen zum Anpassen"></div>
+    <div class="gutter gutter-col" data-split="col" data-i18n-title="gutter.title"></div>
 
     <div class="col" id="col-right">
       <section class="panel" id="panel-comments">
         <div class="panel-head">
           <div class="tabs">
-            <button class="tab active" data-tab="comments">Kommentare</button>
-            <button class="tab" data-tab="related">Vorschläge</button>
+            <button class="tab active" data-tab="comments" data-i18n="tab.comments"></button>
+            <button class="tab" data-tab="related" data-i18n="tab.related"></button>
           </div>
         </div>
         <div class="slot" data-view="comments"></div>
       </section>
-      <div class="gutter gutter-row" data-split="right" title="Ziehen zum Anpassen"></div>
+      <div class="gutter gutter-row" data-split="right" data-i18n-title="gutter.title"></div>
       <section class="panel" id="panel-later">
         <div class="panel-head">
-          <span class="panel-title">Später ansehen</span>
+          <span class="panel-title" data-i18n="panel.later"></span>
           <span id="later-count" class="badge">0</span>
           <div class="spacer"></div>
-          <button id="btn-clear-later" class="btn small ghost" hidden>Alle entfernen</button>
+          <button id="btn-clear-later" class="btn small ghost" data-i18n="later.clear" hidden></button>
         </div>
         <div class="later-list" id="later-list"></div>
       </section>
@@ -72,6 +72,7 @@
   </main>
 
   <div id="toast" class="toast" role="status"></div>
+  <script src="i18n.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

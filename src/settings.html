@@ -3,62 +3,69 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self'">
-  <title>Einstellungen</title>
+  <title>Simon YouTube</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body data-i18n-doc="win.settings">
   <div class="settings">
-    <h1>Einstellungen</h1>
+    <h1 data-i18n="set.title"></h1>
 
     <fieldset>
-      <legend>Lautstärke-Ausgleich (Auto-Level)</legend>
-      <p class="desc">YouTube macht laute Videos automatisch leiser (Lautstärke-Normalisierung). Hier kannst du das ausschalten oder selbst einstellen.</p>
-      <label class="opt"><input type="radio" name="volumeMode" value="auto"> Auto – wie YouTube</label>
-      <label class="opt"><input type="radio" name="volumeMode" value="off"> Aus – immer volle Reglerlautstärke</label>
-      <label class="opt"><input type="radio" name="volumeMode" value="custom"> Eigene Stärke</label>
+      <legend data-i18n="set.lang"></legend>
+      <p class="desc" data-i18n="set.lang.desc"></p>
+      <select id="lang">
+        <option value="de">Deutsch</option>
+        <option value="en">English</option>
+      </select>
+    </fieldset>
+
+    <fieldset>
+      <legend data-i18n="set.vol"></legend>
+      <p class="desc" data-i18n="set.vol.desc"></p>
+      <label class="opt"><input type="radio" name="volumeMode" value="auto"> <span data-i18n="set.vol.auto"></span></label>
+      <label class="opt"><input type="radio" name="volumeMode" value="off"> <span data-i18n="set.vol.off"></span></label>
+      <label class="opt"><input type="radio" name="volumeMode" value="custom"> <span data-i18n="set.vol.custom"></span></label>
       <div class="range" id="strength-row">
         <input type="range" id="volumeStrength" min="0" max="100" step="5">
         <output id="strength-out">50 %</output>
       </div>
-      <p class="desc" style="margin:8px 0 0 26px">0 % = kein Ausgleich, 100 % = so stark wie YouTube.</p>
-      <label class="opt"><input type="radio" name="volumeMode" value="agc"> <b>Profi Auto-Level (AGC)</b> – eigene Regelung mit Zielpegel</label>
+      <p class="desc" style="margin:8px 0 0 26px" data-i18n="set.vol.strength"></p>
+      <label class="opt"><input type="radio" name="volumeMode" value="agc"> <span data-i18n-html="set.vol.agc"></span></label>
     </fieldset>
 
     <fieldset id="agc-box">
-      <legend>Profi Auto-Level</legend>
-      <p class="desc">Misst laufend den Pegel (K-gewichtet, RMS) und regelt die Lautstärke auf den Zielpegel –
-        innerhalb der eingestellten Grenzen für Absenkung und Verstärkung. Ein Limiter verhindert Übersteuern.
-        YouTubes eigene Normalisierung ist dabei aus.</p>
+      <legend data-i18n="set.agc"></legend>
+      <p class="desc" data-i18n="set.agc.desc"></p>
 
       <div class="agc-top">
-        <label>Preset
+        <label><span data-i18n="set.agc.preset"></span>
           <select id="agc-preset">
-            <option value="">– eigene Einstellung –</option>
-            <option value="standard">Standard</option>
-            <option value="speech">Sprache / Podcast</option>
-            <option value="music">Musik (sanft)</option>
-            <option value="night">Nacht-Modus (stark)</option>
-            <option value="broadcast">Broadcast (≈ EBU R128, −23)</option>
+            <option value="" data-i18n="set.agc.preset.custom"></option>
+            <option value="standard" data-i18n="set.agc.preset.standard"></option>
+            <option value="speech" data-i18n="set.agc.preset.speech"></option>
+            <option value="music" data-i18n="set.agc.preset.music"></option>
+            <option value="night" data-i18n="set.agc.preset.night"></option>
+            <option value="broadcast" data-i18n="set.agc.preset.broadcast"></option>
           </select>
         </label>
-        <button id="agc-reset" class="btn small ghost">Zurücksetzen</button>
+        <button id="agc-reset" class="btn small ghost" data-i18n="set.agc.reset"></button>
       </div>
 
       <div class="meters" id="meters">
-        <div class="meter"><span>Eingang</span><div class="bar"><i id="m-in"></i></div><output id="v-in">–</output></div>
-        <div class="meter"><span>Verstärkung</span><div class="bar center"><i id="m-gain"></i></div><output id="v-gain">–</output></div>
-        <div class="meter"><span>Ausgang</span><div class="bar"><i id="m-out"></i><b id="m-target"></b></div><output id="v-out">–</output></div>
-        <div class="meter"><span>Limiter</span><div class="bar"><i id="m-lim" class="lim"></i></div><output id="v-lim">–</output></div>
-        <div class="meter-state" id="m-state">Kein Video aktiv</div>
+        <div class="meter"><span data-i18n="meter.in"></span><div class="bar"><i id="m-in"></i></div><output id="v-in">–</output></div>
+        <div class="meter"><span data-i18n="meter.gain"></span><div class="bar center"><i id="m-gain"></i></div><output id="v-gain">–</output></div>
+        <div class="meter"><span data-i18n="meter.out"></span><div class="bar"><i id="m-out"></i><b id="m-target"></b></div><output id="v-out">–</output></div>
+        <div class="meter"><span data-i18n="meter.lim"></span><div class="bar"><i id="m-lim" class="lim"></i></div><output id="v-lim">–</output></div>
+        <div class="meter-state" id="m-state"></div>
       </div>
 
       <div id="agc-controls" class="agc-grid"></div>
-      <label class="opt"><input type="checkbox" id="agc-limiter"> Limiter (Schutz vor Übersteuern)</label>
+      <label class="opt"><input type="checkbox" id="agc-limiter"> <span data-i18n="set.agc.limiter"></span></label>
     </fieldset>
 
     <fieldset>
-      <legend>Videoqualität</legend>
-      <p class="desc">Auto lässt YouTube wählen. Sonst wird die gewählte Qualität (oder die nächstniedrigere verfügbare) erzwungen.</p>
+      <legend data-i18n="set.quality"></legend>
+      <p class="desc" data-i18n="set.quality.desc"></p>
       <select id="quality">
         <option value="auto">Auto</option>
         <option value="hd2160">2160p (4K)</option>
@@ -73,15 +80,14 @@
     </fieldset>
 
     <fieldset>
-      <legend>Anmeldung übernehmen</legend>
-      <p class="desc">Falls Google die Anmeldung in der App blockiert: In deinem normalen Browser bei YouTube anmelden,
-        Cookies als <b>cookies.txt</b> exportieren (z.&nbsp;B. Erweiterung „Get cookies.txt LOCALLY“) und hier importieren.
-        Die Datei danach löschen – sie enthält deine Anmeldung.</p>
-      <button id="import-cookies" class="btn">cookies.txt importieren …</button>
+      <legend data-i18n="set.cookies"></legend>
+      <p class="desc" data-i18n-html="set.cookies.desc"></p>
+      <button id="import-cookies" class="btn" data-i18n="set.cookies.btn"></button>
     </fieldset>
 
-    <div class="foot">Änderungen gelten sofort für das Video-Panel und werden gespeichert.</div>
+    <div class="foot" data-i18n="set.foot"></div>
   </div>
+  <script src="i18n.js"></script>
   <script src="settings.js"></script>
 </body>
 </html>

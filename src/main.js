@@ -5,6 +5,7 @@ const {
 const path = require('node:path');
 const fs = require('node:fs');
 const CSS = require('./inject');
+const I18N = require('./i18n');
 
 const APP_ID = 'io.github.lordsimon666.SimonYouTube';
 const PARTITION = 'persist:youtube';
@@ -59,7 +60,9 @@ const DEFAULT_AGC = {
   ...Object.fromEntries(Object.entries(AGC_RANGES).map(([k, r]) => [k, r[2]])),
   limiter: true,
 };
-const DEFAULT_SETTINGS = { volumeMode: 'auto', volumeStrength: 50, quality: 'auto', agc: DEFAULT_AGC };
+const DEFAULT_SETTINGS = { volumeMode: 'auto', volumeStrength: 50, quality: 'auto', agc: DEFAULT_AGC, lang: '' };
+// Sprache der App: gespeichert, sonst Systemsprache (Deutsch für de-*, sonst Englisch)
+const T = (key, vars) => I18N.t(store.settings.lang || 'de', key, vars);
 const PLAYER_SCRIPT = fs.readFileSync(path.join(__dirname, 'player-inject.js'), 'utf8');
 const QUALITIES = ['auto', 'hd2160', 'hd1440', 'hd1080', 'hd720', 'large', 'medium', 'small', 'tiny'];
 let storePath = '';
@@ -75,6 +78,7 @@ function loadStore() {
     store.settings = cleanSettings(store.settings);
     if (!store.splitBounds || typeof store.splitBounds !== 'object') store.splitBounds = {};
   } catch { /* erster Start */ }
+  store.settings = cleanSettings(store.settings);
 }
 
 function writeStore() {
@@ -193,11 +197,7 @@ let quitting = false;
 let preSplit = null;       // Hauptfenster-Größe vor dem Aufteilen
 
 const HOST_HEADER = 36;    // Höhe der Kopfzeile in den Einzelfenstern
-const PANEL_TITLES = {
-  video: 'Video – Simon YouTube',
-  browser: 'Browser – Simon YouTube',
-  comments: 'Kommentare & Vorschläge – Simon YouTube',
-};
+const panelTitle = (role) => T('win.' + role);
 
 const ytSession = () => session.fromPartition(PARTITION);
 
@@ -391,7 +391,7 @@ function onVideoNavigated(url) {
 function addLater(info, titleGuess) {
   if (!info) return;
   if (store.watchLater.some((x) => x.id === info.id)) {
-    toast('Ist schon in „Später ansehen“');
+    toast(T('toast.laterExists'));
     return;
   }
   const item = {
@@ -404,7 +404,7 @@ function addLater(info, titleGuess) {
   store.watchLater.push(item);
   saveStore();
   sendLater();
-  toast('Zu „Später ansehen“ hinzugefügt');
+  toast(T('toast.laterAdded'));
   fetchMeta(info).then((meta) => {
     if (!meta) return;
     const it = store.watchLater.find((x) => x.id === info.id);
@@ -445,7 +445,7 @@ function openLogin() {
     parent: win || undefined,
     width: 520,
     height: 720,
-    title: 'Bei YouTube anmelden',
+    title: T('win.login'),
     autoHideMenuBar: true,
     backgroundColor: '#ffffff',
     icon: iconPath(),
@@ -475,7 +475,7 @@ function openLogin() {
     loginWin = null;
     await refreshAuth();
     if (loggedIn && !wasLoggedIn) {
-      toast('Angemeldet');
+      toast(T('toast.loggedIn'));
       reloadAll();
       return;
     }
@@ -492,17 +492,10 @@ async function showLoginHelp(blocked) {
   for (;;) {
     const { response } = await dialog.showMessageBox(win, {
       type: blocked ? 'warning' : 'question',
-      title: 'Anmeldung',
-      message: blocked ? 'Google blockiert die Anmeldung in Apps' : 'Anmeldung nicht geklappt?',
-      detail:
-        'Google erlaubt die Anmeldung nur in normalen Browsern. Du kannst die Anmeldung aber aus deinem ' +
-        'Browser übernehmen:\n\n' +
-        '1. In Chrome/Edge/Firefox auf youtube.com anmelden.\n' +
-        '2. Erweiterung „Get cookies.txt LOCALLY“ installieren (Knopf unten).\n' +
-        '3. Auf youtube.com die Erweiterung öffnen → „Export“ → cookies.txt speichern.\n' +
-        '4. Hier „cookies.txt importieren …“ wählen.\n' +
-        '5. Die cookies.txt danach löschen – sie enthält deine Anmeldung.',
-      buttons: ['cookies.txt importieren …', 'Erweiterung (Chrome/Edge)', 'Erweiterung (Firefox)', 'youtube.com im Browser öffnen', 'Schließen'],
+      title: T('help.title'),
+      message: blocked ? T('help.blocked') : T('help.failed'),
+      detail: T('help.detail'),
+      buttons: [T('help.import'), T('help.extChrome'), T('help.extFirefox'), T('help.openYt'), T('help.close')],
       defaultId: 0,
       cancelId: 4,
       noLink: true,
@@ -519,14 +512,14 @@ async function showLoginHelp(blocked) {
 // Übernimmt die Anmeldung aus dem normalen Browser (Netscape-cookies.txt-Format).
 async function importCookies(parent) {
   const res = await dialog.showOpenDialog(parent || win, {
-    title: 'cookies.txt auswählen',
+    title: T('import.pick'),
     properties: ['openFile'],
-    filters: [{ name: 'Cookies (Netscape-Format)', extensions: ['txt'] }, { name: 'Alle Dateien', extensions: ['*'] }],
+    filters: [{ name: T('import.filter'), extensions: ['txt'] }, { name: T('import.all'), extensions: ['*'] }],
   });
   if (res.canceled || !res.filePaths[0]) return;
   let text;
   try { text = fs.readFileSync(res.filePaths[0], 'utf8'); } catch (err) {
-    dialog.showErrorBox('Import fehlgeschlagen', String(err.message || err));
+    dialog.showErrorBox(T('import.failed'), String(err.message || err));
     return;
   }
   const ses = ytSession();
@@ -559,15 +552,15 @@ async function importCookies(parent) {
   const was = loggedIn;
   await refreshAuth();
   if (loggedIn) {
-    toast(`Angemeldet (${ok} Cookies übernommen)`);
+    toast(T('toast.cookiesOk', { n: ok }));
     if (!was) reloadAll();
     if (loginWin && !loginWin.isDestroyed()) loginWin.close();
   } else {
     dialog.showMessageBox(parent || win, {
       type: 'warning',
-      title: 'Nicht angemeldet',
-      message: `${ok} Cookies übernommen, aber keine YouTube-Anmeldung gefunden.`,
-      detail: 'Exportiere die Cookies, während du in deinem Browser auf youtube.com angemeldet bist.',
+      title: T('import.none.title'),
+      message: T('import.none.msg', { n: ok }),
+      detail: T('import.none.detail'),
     });
   }
 }
@@ -595,7 +588,7 @@ async function logout() {
     views.video.webContents.reload();
     views.comments.webContents.reload();
   }
-  toast('Abgemeldet');
+  toast(T('toast.loggedOut'));
 }
 
 // ---------------------------------------------------------------- Fenster
@@ -622,7 +615,7 @@ function showWelcome() {
     resizable: false,
     minimizable: false,
     maximizable: false,
-    title: 'Willkommen',
+    title: T('win.welcome'),
     autoHideMenuBar: true,
     backgroundColor: '#181818',
     icon: iconPath(),
@@ -640,6 +633,23 @@ function showWelcome() {
     if (!store.firstRunDone) { store.firstRunDone = true; saveStore(); }
   });
   welcomeWin.loadFile(path.join(__dirname, 'welcome.html'));
+}
+
+function loadPlaceholders() {
+  if (current) return;
+  views.video.webContents.loadURL(placeholder(T('ph.video')));
+  views.comments.webContents.loadURL(placeholder(T('ph.comments')));
+}
+
+// Sprache zur Laufzeit umschalten
+function applyLanguage() {
+  const lang = store.settings.lang;
+  for (const w of [win, welcomeWin, settingsWin, ...Object.values(hosts)]) {
+    if (w && !w.isDestroyed()) w.webContents.send('lang', lang);
+  }
+  for (const [role, h] of Object.entries(hosts)) if (!h.isDestroyed()) h.setTitle(panelTitle(role));
+  if (loginWin && !loginWin.isDestroyed()) loginWin.setTitle(T('win.login'));
+  if (views.video) loadPlaceholders();
 }
 
 function createWindow() {
@@ -695,8 +705,7 @@ function createWindow() {
   createView('comments');
 
   views.browser.webContents.loadURL(HOME_URL);
-  views.video.webContents.loadURL(placeholder('Klicke im Browser auf ein Video oder Short,<br>um es hier abzuspielen.'));
-  views.comments.webContents.loadURL(placeholder('Hier erscheinen Kommentare und Vorschläge<br>zum aktuellen Video.'));
+  loadPlaceholders();
 
   win.once('ready-to-show', () => {
     win.show();
@@ -733,7 +742,7 @@ function splitWindows() {
       ...boundsFor(role),
       minWidth: 320,
       minHeight: 240,
-      title: PANEL_TITLES[role],
+      title: panelTitle(role),
       backgroundColor: '#0f0f0f',
       icon: iconPath(),
       autoHideMenuBar: true,
@@ -814,6 +823,11 @@ function cleanSettings(s) {
   out.volumeStrength = Math.round(Math.min(100, Math.max(0, Number(out.volumeStrength))));
   if (!Number.isFinite(out.volumeStrength)) out.volumeStrength = DEFAULT_SETTINGS.volumeStrength;
   if (!QUALITIES.includes(out.quality)) out.quality = DEFAULT_SETTINGS.quality;
+  if (!I18N.LANGS.includes(out.lang)) {
+    let sys = 'en';
+    try { sys = /^de\b/i.test(app.getLocale()) ? 'de' : 'en'; } catch { /* vor app.ready */ }
+    out.lang = sys;
+  }
   return out;
 }
 
@@ -836,7 +850,7 @@ function openSettings() {
     resizable: true,
     minimizable: false,
     maximizable: false,
-    title: 'Einstellungen',
+    title: T('win.settings'),
     autoHideMenuBar: true,
     backgroundColor: '#181818',
     icon: iconPath(),
@@ -892,6 +906,7 @@ ipcMain.handle('state:get', () => ({
   splits: store.splits,
   commentsTab: store.commentsTab,
   nowPlaying: current,
+  lang: store.settings.lang,
   splitMode,
 }));
 
@@ -904,9 +919,11 @@ ipcMain.on('settings:open', (e) => { if (fromHost(e)) openSettings(); });
 ipcMain.handle('settings:get', () => store.settings);
 ipcMain.on('settings:set', (e, s) => {
   if (!fromHost(e)) return;
+  const oldLang = store.settings.lang;
   store.settings = cleanSettings({ ...store.settings, ...(s || {}) });
   saveStore();
   applyPlayerSettings();
+  if (store.settings.lang !== oldLang) applyLanguage();
 });
 
 ipcMain.on('layout:bounds', (e, bounds) => {

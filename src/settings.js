@@ -1,5 +1,7 @@
 'use strict';
-/* global api */
+/* global api, I18N */
+let lang = 'de';
+const L = (key) => I18N.t(lang, key);
 const $ = (id) => document.getElementById(id);
 const radios = [...document.querySelectorAll('input[name="volumeMode"]')];
 const strength = $('volumeStrength');
@@ -7,15 +9,15 @@ const quality = $('quality');
 
 // Regler des Profi-Auto-Levels
 const AGC = [
-  { key: 'target', label: 'Zielpegel', unit: 'dBFS', min: -36, max: -6, step: 0.5, help: 'Wie laut es im Schnitt sein soll' },
-  { key: 'maxCut', label: 'Max. Absenkung', unit: 'dB', min: 0, max: 40, step: 0.5, help: 'Laute Stellen höchstens so viel leiser' },
-  { key: 'maxBoost', label: 'Max. Verstärkung', unit: 'dB', min: 0, max: 40, step: 0.5, help: 'Leise Stellen höchstens so viel lauter' },
-  { key: 'attack', label: 'Attack (Absenken)', unit: 'ms', min: 10, max: 5000, step: 10, help: 'Wie schnell bei zu laut abgesenkt wird' },
-  { key: 'release', label: 'Release (Anheben)', unit: 'ms', min: 50, max: 20000, step: 50, help: 'Wie schnell bei zu leise angehoben wird' },
-  { key: 'window', label: 'Messfenster', unit: 'ms', min: 50, max: 5000, step: 50, help: 'Über welchen Zeitraum gemittelt wird' },
-  { key: 'gate', label: 'Gate', unit: 'dBFS', min: -80, max: -20, step: 1, help: 'Leiser als das (Pausen/Rauschen) wird nicht hochgezogen' },
-  { key: 'makeup', label: 'Make-up-Gain', unit: 'dB', min: -12, max: 12, step: 0.5, help: 'Feste Verstärkung nach der Regelung' },
-  { key: 'ceiling', label: 'Limiter-Grenze', unit: 'dBFS', min: -12, max: 0, step: 0.5, help: 'Höchster Ausgangspegel' },
+  { key: 'target', unit: 'dBFS', min: -36, max: -6, step: 0.5 },
+  { key: 'maxCut', unit: 'dB', min: 0, max: 40, step: 0.5 },
+  { key: 'maxBoost', unit: 'dB', min: 0, max: 40, step: 0.5 },
+  { key: 'attack', unit: 'ms', min: 10, max: 5000, step: 10 },
+  { key: 'release', unit: 'ms', min: 50, max: 20000, step: 50 },
+  { key: 'window', unit: 'ms', min: 50, max: 5000, step: 50 },
+  { key: 'gate', unit: 'dBFS', min: -80, max: -20, step: 1 },
+  { key: 'makeup', unit: 'dB', min: -12, max: 12, step: 0.5 },
+  { key: 'ceiling', unit: 'dBFS', min: -12, max: 0, step: 0.5 },
 ];
 
 const PRESETS = {
@@ -35,9 +37,10 @@ const grid = $('agc-controls');
 for (const d of AGC) {
   const row = document.createElement('div');
   row.className = 'agc-row';
-  row.title = d.help;
+  row.title = '';
+  row.dataset.i18nTitle = 'agc.' + d.key + '.help';
   const label = document.createElement('label');
-  label.textContent = d.label;
+  label.dataset.i18n = 'agc.' + d.key;
   label.htmlFor = 'agc-' + d.key;
   const input = document.createElement('input');
   input.type = 'range';
@@ -45,7 +48,7 @@ for (const d of AGC) {
   input.min = d.min; input.max = d.max; input.step = d.step;
   const out = document.createElement('output');
   const help = document.createElement('small');
-  help.textContent = d.help;
+  help.dataset.i18n = 'agc.' + d.key + '.help';
   row.append(label, input, out, help);
   grid.append(row);
   inputs[d.key] = input;
@@ -112,7 +115,7 @@ api.on('agc:stats', (s) => {
   const box = $('meters');
   box.classList.toggle('idle', !s || !s.active);
   if (!s || !s.active) {
-    $('m-state').textContent = mode() === 'agc' ? 'Warte auf Video im Video-Panel …' : 'Profi Auto-Level ist aus';
+    $('m-state').textContent = mode() === 'agc' ? L('meter.wait') : L('meter.off');
     for (const id of ['m-in', 'm-out', 'm-lim']) $(id).style.width = '0';
     $('m-gain').style.cssText = 'left:50%;width:0';
     for (const id of ['v-in', 'v-gain', 'v-out', 'v-lim']) $(id).textContent = '–';
@@ -131,10 +134,20 @@ api.on('agc:stats', (s) => {
   $('v-out').textContent = s.outDb < -99 ? '–' : s.outDb.toFixed(1) + ' dB';
   $('v-gain').textContent = (s.gainDb >= 0 ? '+' : '') + s.gainDb.toFixed(1) + ' dB';
   $('v-lim').textContent = s.limiterDb < -0.05 ? s.limiterDb.toFixed(1) + ' dB' : '0 dB';
-  $('m-state').textContent = s.paused ? 'Pausiert' : s.gated ? 'Gate: zu leise – Verstärkung wird gehalten' : 'Regelt …';
+  $('m-state').textContent = s.paused ? L('meter.paused') : s.gated ? L('meter.gated') : L('meter.active');
 });
 
+function setLang(l) {
+  lang = l;
+  $('lang').value = l;
+  I18N.apply(lang);
+  $('m-state').textContent = L('meter.none');
+}
+$('lang').addEventListener('change', (e) => api.setSettings({ lang: e.target.value }));
+api.on('lang', setLang);
+
 api.getSettings().then((s) => {
+  setLang(s.lang);
   for (const r of radios) r.checked = r.value === s.volumeMode;
   strength.value = String(s.volumeStrength);
   quality.value = s.quality;
