@@ -43,7 +43,24 @@ const store = {
   splitMode: false,
   splitBounds: {},
 };
-const DEFAULT_SETTINGS = { volumeMode: 'auto', volumeStrength: 50, quality: 'auto' };
+// Profi-Auto-Level (AGC): [min, max, Standard]
+const AGC_RANGES = {
+  target: [-36, -6, -18],     // Zielpegel in dBFS (RMS, K-gewichtet)
+  maxCut: [0, 40, 12],        // max. Absenkung in dB
+  maxBoost: [0, 40, 12],      // max. Verstärkung in dB
+  attack: [10, 5000, 300],    // Absenk-Zeit in ms
+  release: [50, 20000, 2500], // Anhebe-Zeit in ms
+  window: [50, 5000, 400],    // Messfenster in ms
+  gate: [-80, -20, -50],      // unterhalb wird nicht nachgeregelt (dBFS)
+  makeup: [-12, 12, 0],       // Make-up-Gain in dB
+  ceiling: [-12, 0, -1],      // Limiter-Grenze in dBFS
+};
+const DEFAULT_AGC = {
+  ...Object.fromEntries(Object.entries(AGC_RANGES).map(([k, r]) => [k, r[2]])),
+  limiter: true,
+};
+const DEFAULT_SETTINGS = { volumeMode: 'auto', volumeStrength: 50, quality: 'auto', agc: DEFAULT_AGC };
+const PLAYER_SCRIPT = fs.readFileSync(path.join(__dirname, 'player-inject.js'), 'utf8');
 const QUALITIES = ['auto', 'hd2160', 'hd1440', 'hd1080', 'hd720', 'large', 'medium', 'small', 'tiny'];
 let storePath = '';
 let saveTimer = null;
@@ -787,7 +804,13 @@ function mergeWindows() {
 // ---------------------------------------------------------------- Einstellungen
 function cleanSettings(s) {
   const out = { ...DEFAULT_SETTINGS, ...(s && typeof s === 'object' ? s : {}) };
-  if (!['auto', 'off', 'custom'].includes(out.volumeMode)) out.volumeMode = DEFAULT_SETTINGS.volumeMode;
+  if (!['auto', 'off', 'custom', 'agc'].includes(out.volumeMode)) out.volumeMode = DEFAULT_SETTINGS.volumeMode;
+  const agcIn = out.agc && typeof out.agc === 'object' ? out.agc : {};
+  out.agc = { limiter: agcIn.limiter !== undefined ? !!agcIn.limiter : DEFAULT_AGC.limiter };
+  for (const [k, [min, max, def]] of Object.entries(AGC_RANGES)) {
+    const v = Number(agcIn[k]);
+    out.agc[k] = Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : def;
+  }
   out.volumeStrength = Math.round(Math.min(100, Math.max(0, Number(out.volumeStrength))));
   if (!Number.isFinite(out.volumeStrength)) out.volumeStrength = DEFAULT_SETTINGS.volumeStrength;
   if (!QUALITIES.includes(out.quality)) out.quality = DEFAULT_SETTINGS.quality;
@@ -799,16 +822,18 @@ function applyPlayerSettings() {
   if (!wc || wc.isDestroyed()) return;
   const url = wc.getURL();
   if (!isYoutubeUrl(url)) return;
-  wc.executeJavaScript(CSS.playerScript(store.settings)).catch(() => {});
+  wc.executeJavaScript(`${PLAYER_SCRIPT}(${JSON.stringify(store.settings)});`).catch(() => {});
 }
 
 function openSettings() {
   if (settingsWin && !settingsWin.isDestroyed()) { settingsWin.focus(); return; }
   settingsWin = new BrowserWindow({
     parent: win || undefined,
-    width: 480,
-    height: 700,
-    resizable: false,
+    width: 560,
+    height: 820,
+    minWidth: 460,
+    minHeight: 400,
+    resizable: true,
     minimizable: false,
     maximizable: false,
     title: 'Einstellungen',
@@ -824,7 +849,18 @@ function openSettings() {
   });
   settingsWin.setMenuBarVisibility(false);
   settingsWin.once('ready-to-show', () => settingsWin && settingsWin.show());
-  settingsWin.on('closed', () => { settingsWin = null; });
+  // Live-Pegelanzeige des Profi-Auto-Levels
+  const statsTimer = setInterval(async () => {
+    if (!settingsWin || settingsWin.isDestroyed()) return;
+    const wc = views.video && views.video.webContents;
+    let stats = { active: false };
+    if (wc && !wc.isDestroyed() && isYoutubeUrl(wc.getURL())) {
+      stats = await wc.executeJavaScript('window.__ytp && window.__ytp.agcStats ? window.__ytp.agcStats() : null')
+        .catch(() => null) || { active: false };
+    }
+    if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('agc:stats', stats);
+  }, 150);
+  settingsWin.on('closed', () => { settingsWin = null; clearInterval(statsTimer); });
   settingsWin.loadFile(path.join(__dirname, 'settings.html'));
 }
 

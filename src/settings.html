@@ -21,6 +21,39 @@
         <output id="strength-out">50 %</output>
       </div>
       <p class="desc" style="margin:8px 0 0 26px">0 % = kein Ausgleich, 100 % = so stark wie YouTube.</p>
+      <label class="opt"><input type="radio" name="volumeMode" value="agc"> <b>Profi Auto-Level (AGC)</b> – eigene Regelung mit Zielpegel</label>
+    </fieldset>
+
+    <fieldset id="agc-box">
+      <legend>Profi Auto-Level</legend>
+      <p class="desc">Misst laufend den Pegel (K-gewichtet, RMS) und regelt die Lautstärke auf den Zielpegel –
+        innerhalb der eingestellten Grenzen für Absenkung und Verstärkung. Ein Limiter verhindert Übersteuern.
+        YouTubes eigene Normalisierung ist dabei aus.</p>
+
+      <div class="agc-top">
+        <label>Preset
+          <select id="agc-preset">
+            <option value="">– eigene Einstellung –</option>
+            <option value="standard">Standard</option>
+            <option value="speech">Sprache / Podcast</option>
+            <option value="music">Musik (sanft)</option>
+            <option value="night">Nacht-Modus (stark)</option>
+            <option value="broadcast">Broadcast (≈ EBU R128, −23)</option>
+          </select>
+        </label>
+        <button id="agc-reset" class="btn small ghost">Zurücksetzen</button>
+      </div>
+
+      <div class="meters" id="meters">
+        <div class="meter"><span>Eingang</span><div class="bar"><i id="m-in"></i></div><output id="v-in">–</output></div>
+        <div class="meter"><span>Verstärkung</span><div class="bar center"><i id="m-gain"></i></div><output id="v-gain">–</output></div>
+        <div class="meter"><span>Ausgang</span><div class="bar"><i id="m-out"></i><b id="m-target"></b></div><output id="v-out">–</output></div>
+        <div class="meter"><span>Limiter</span><div class="bar"><i id="m-lim" class="lim"></i></div><output id="v-lim">–</output></div>
+        <div class="meter-state" id="m-state">Kein Video aktiv</div>
+      </div>
+
+      <div id="agc-controls" class="agc-grid"></div>
+      <label class="opt"><input type="checkbox" id="agc-limiter"> Limiter (Schutz vor Übersteuern)</label>
     </fieldset>
 
     <fieldset>

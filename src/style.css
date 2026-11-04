@@ -221,3 +221,29 @@ body.split .topbar { gap: 6px; padding: 0 8px; }
 /* ---------- Einzelfenster im 4-Fenster-Modus (nur Kopfzeile, darunter die Webansicht) */
 body.panel-window { background: var(--head); }
 body.panel-window .panel-head { height: 36px; }
+
+/* ---------- Profi Auto-Level */
+#agc-box.disabled .agc-grid, #agc-box.disabled .agc-top, #agc-box.disabled > label.opt { opacity: .45; }
+.agc-top { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 12px; }
+.agc-top label { flex: 1; display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 12px; }
+.agc-grid { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 6px; }
+.agc-row { display: grid; grid-template-columns: 130px 1fr 88px; align-items: center; column-gap: 10px; }
+.agc-row label { font-weight: 600; }
+.agc-row input { accent-color: var(--accent); width: 100%; }
+.agc-row output { white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+.agc-row small { grid-column: 2 / 4; color: var(--muted); font-size: 11px; margin-top: -2px; }
+.agc-row input:disabled { opacity: .4; }
+
+.meters { background: #101010; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.meter { display: grid; grid-template-columns: 90px 1fr 70px; align-items: center; gap: 8px; font-size: 12px; }
+.meter span { color: var(--muted); }
+.meter output { text-align: right; font-variant-numeric: tabular-nums; }
+.bar { position: relative; height: 10px; background: #262626; border-radius: 5px; overflow: hidden; }
+.bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(90deg, #2ea85a, #d6c533 75%, #e0443a); transition: width .12s linear, left .12s linear; }
+.bar i.boost { background: #2e8fd6; }
+.bar i.cut { background: #e0883a; }
+.bar i.lim { background: #e0443a; }
+.bar.center::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: #888; }
+.bar b { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #fff; opacity: .8; }
+.meter-state { color: var(--muted); font-size: 11px; text-align: right; }
+.meters.idle .bar b { display: none; }

@@ -14,7 +14,7 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "check": "node --check src/main.js && node --check src/preload-yt.js && node --check src/preload-host.js && node --check src/renderer.js && node --check src/welcome.js && node --check src/inject.js && node --check src/panel.js && node --check src/settings.js",
+    "check": "node --check src/main.js && node --check src/preload-yt.js && node --check src/preload-host.js && node --check src/renderer.js && node --check src/welcome.js && node --check src/inject.js && node --check src/panel.js && node --check src/settings.js && node --check src/player-inject.js",
     "dist:win": "electron-builder --win --publish never",
     "dist:linux": "electron-builder --linux AppImage deb --publish never",
     "dist:flatpak": "electron-builder --linux flatpak --publish never"

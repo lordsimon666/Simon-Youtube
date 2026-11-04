@@ -23,6 +23,9 @@ YouTube als Desktop-App mit **vier Panels**:
 - **⚙ Einstellungen**:
   - **Lautstärke-Ausgleich (Auto-Level)**: *Auto* (wie YouTube), *Aus* (keine Normalisierung, immer die eingestellte
     Reglerlautstärke) oder *Eigene Stärke* 0–100 %.
+  - **Profi Auto-Level (AGC)**: eigene Lautstärke-Regelung wie ein professioneller Auto-Leveler –
+    Zielpegel (dBFS), max. Absenkung, max. Verstärkung, Attack, Release, Messfenster, Gate, Make-up-Gain und Limiter,
+    mit Presets (Standard, Sprache, Musik, Nacht-Modus, Broadcast) und Live-Pegelanzeige.
   - **Videoqualität**: *Auto* oder feste Auflösung (144p … 4K). Ist die gewählte nicht verfügbar, wird die nächstniedrigere genommen.
 - Oben rechts: **Anmelden** / **Abmelden**. Beim allerersten Start erscheint ein Anmeldefenster, dort kann man auch **„Ohne Anmeldung fortfahren“** wählen.
 

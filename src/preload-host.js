@@ -2,7 +2,7 @@
 // Preload für die eigene Oberfläche (Hauptfenster + Willkommensfenster).
 const { contextBridge, ipcRenderer } = require('electron');
 
-const EVENTS = new Set(['later:list', 'auth:state', 'now-playing', 'toast', 'split:state', 'comments-tab']);
+const EVENTS = new Set(['later:list', 'auth:state', 'now-playing', 'toast', 'split:state', 'comments-tab', 'agc:stats']);
 
 contextBridge.exposeInMainWorld('api', {
   getState: () => ipcRenderer.invoke('state:get'),
