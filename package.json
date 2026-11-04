@@ -1,0 +1,83 @@
+{
+  "name": "simon-youtube",
+  "productName": "Simon YouTube",
+  "version": "1.0.0",
+  "description": "YouTube-Desktop-App mit vier Panels: Video, Browser, Kommentare/Vorschläge und Später ansehen",
+  "main": "src/main.js",
+  "desktopName": "io.github.lordsimon666.SimonYouTube.desktop",
+  "homepage": "https://github.com/lordsimon666/Simon-Youtube",
+  "author": {
+    "name": "lordsimon666",
+    "email": "lordsimon666@users.noreply.github.com"
+  },
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check src/main.js && node --check src/preload-yt.js && node --check src/preload-host.js && node --check src/renderer.js && node --check src/welcome.js && node --check src/inject.js",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:linux": "electron-builder --linux AppImage deb --publish never",
+    "dist:flatpak": "electron-builder --linux flatpak --publish never"
+  },
+  "devDependencies": {
+    "electron": "^45.2.2",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "io.github.lordsimon666.SimonYouTube",
+    "productName": "Simon YouTube",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "publish": null,
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Simon YouTube",
+      "artifactName": "Simon-YouTube-Setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "Simon-YouTube-Portable.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "flatpak"
+      ],
+      "icon": "build/icon.png",
+      "category": "AudioVideo",
+      "executableName": "simon-youtube",
+      "synopsis": "YouTube mit Video-, Browser-, Kommentar- und Später-ansehen-Panel",
+      "maintainer": "lordsimon666 <lordsimon666@users.noreply.github.com>",
+      "syncDesktopName": true
+    },
+    "appImage": {
+      "artifactName": "Simon-YouTube.${ext}"
+    },
+    "deb": {
+      "artifactName": "Simon-YouTube.${ext}"
+    },
+    "flatpak": {
+      "artifactName": "Simon-YouTube.${ext}",
+      "runtimeVersion": "25.08",
+      "baseVersion": "25.08"
+    }
+  }
+}

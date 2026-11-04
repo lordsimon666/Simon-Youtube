@@ -1,0 +1,128 @@
+name: Build
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+jobs:
+  windows:
+    name: Windows (Installer + Portable)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npx electron-builder --win --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v5
+        with:
+          name: windows
+          path: |
+            dist/Simon-YouTube-Setup.exe
+            dist/Simon-YouTube-Portable.exe
+          if-no-files-found: error
+
+  linux:
+    name: Linux (AppImage + deb)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npx electron-builder --linux AppImage deb --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v5
+        with:
+          name: linux
+          path: |
+            dist/Simon-YouTube.AppImage
+            dist/Simon-YouTube.deb
+          if-no-files-found: error
+
+  flatpak:
+    name: Linux (Flatpak)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - name: Flatpak-Werkzeuge installieren
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub \
+            org.freedesktop.Platform//25.08 \
+            org.freedesktop.Sdk//25.08 \
+            org.electronjs.Electron2.BaseApp//25.08
+      - run: npm ci
+      - run: npx electron-builder --linux flatpak --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v5
+        with:
+          name: flatpak
+          path: dist/Simon-YouTube.flatpak
+          if-no-files-found: error
+
+  release:
+    name: Release veröffentlichen
+    needs: [windows, linux, flatpak]
+    # Nur auf dem Standard-Branch (nicht bei Pull Requests) veröffentlichen.
+    # Windows + Linux müssen klappen, Flatpak wird mitgenommen, wenn es gebaut wurde.
+    if: >-
+      always() &&
+      github.event_name != 'pull_request' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      needs.windows.result == 'success' &&
+      needs.linux.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          path: release
+          merge-multiple: true
+      - run: ls -la release
+      - name: Release "latest" ersetzen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest release/* \
+            --target "${{ github.sha }}" \
+            --title "Simon YouTube" \
+            --latest \
+            --notes "Automatisch gebaut aus ${{ github.sha }}.
+
+          | Datei | System |
+          |---|---|
+          | Simon-YouTube-Setup.exe | Windows – Installer |
+          | Simon-YouTube-Portable.exe | Windows – Portable (ohne Installation) |
+          | Simon-YouTube.AppImage | Linux – AppImage |
+          | Simon-YouTube.deb | Debian / Ubuntu / Mint |
+          | Simon-YouTube.flatpak | Linux – Flatpak |"
