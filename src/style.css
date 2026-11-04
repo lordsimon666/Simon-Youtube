@@ -67,10 +67,51 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .col { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 #col-left { flex: var(--col) 1 0; }
 #col-right { flex: calc(100 - var(--col)) 1 0; }
-#panel-video { flex: var(--left) 1 0; }
-#panel-browser { flex: calc(100 - var(--left)) 1 0; }
-#panel-comments { flex: var(--right) 1 0; }
-#panel-later { flex: calc(100 - var(--right)) 1 0; }
+/* Vier Plätze; welches Panel wo liegt, ist frei verschiebbar */
+.pos { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-radius: 10px; }
+.pos > .panel { flex: 1 1 0; }
+.pos[data-pos="tl"] { flex: var(--left) 1 0; }
+.pos[data-pos="bl"] { flex: calc(100 - var(--left)) 1 0; }
+.pos[data-pos="tr"] { flex: var(--right) 1 0; }
+.pos[data-pos="br"] { flex: calc(100 - var(--right)) 1 0; }
+
+/* Griff zum Verschieben */
+.grip {
+  cursor: grab; color: var(--muted); font-size: 15px; line-height: 1; padding: 2px 2px; border-radius: 4px; flex: none;
+}
+.grip:hover { color: var(--text); background: var(--hover); }
+.grip:active { cursor: grabbing; }
+
+/* Während des Ziehens: Webansichten sind ausgeblendet, alle Panels sind Ablageziele */
+.panel { position: relative; }
+body.dragging-panel .panel::after {
+  content: attr(data-drop); position: absolute; inset: 36px 0 0 0; display: flex; align-items: center;
+  justify-content: center; color: var(--muted); font-size: 15px; font-weight: 600;
+  background: rgba(255, 255, 255, .02); border: 2px dashed #3a3a3a; border-radius: 0 0 10px 10px; pointer-events: none;
+}
+body.dragging-panel .panel.drag-source { opacity: .45; }
+body.dragging-panel .pos.drop-target .panel::after {
+  border-color: var(--accent); color: var(--text); background: rgba(255, 0, 51, .08);
+}
+
+/* ---------- Adressleiste */
+.address {
+  flex: 1; max-width: 680px; min-width: 160px; display: flex; align-items: center;
+  background: #121212; border: 1px solid var(--border); border-radius: 999px; padding: 0 4px 0 14px; height: 32px;
+  transition: border-color .15s;
+}
+.address:focus-within { border-color: #4a4a4a; background: #0c0c0c; }
+.address.error { border-color: var(--accent); animation: shake .3s; }
+.address input {
+  flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; user-select: text;
+}
+.address input::placeholder { color: #777; }
+.addr-btn {
+  flex: none; width: 26px; height: 26px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 13px;
+}
+.addr-btn:hover { background: var(--hover); color: var(--text); }
+#addr-later { font-size: 17px; }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 
 .gutter { flex: 0 0 6px; position: relative; }
 .gutter::after {
@@ -167,11 +208,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #btn-split { display: inline-flex; align-items: center; gap: 4px; }
 
 /* ---------- 4-Fenster-Modus: Hauptfenster zeigt nur "Später ansehen" */
-body.split #col-left,
-body.split #panel-comments,
-body.split .gutter { display: none; }
-body.split #col-right { flex: 1 1 0; }
-body.split #panel-later { flex: 1 1 0; }
+body.split .gutter,
+body.split .col:not(:has(#panel-later)),
+body.split .pos:not(:has(#panel-later)) { display: none; }
+body.split .col, body.split .pos { flex: 1 1 0; }
+body.split .grip { display: none; }
 body.split .auth-status { display: none; }
 body.split .brand-text { display: none; }
 body.split .topbar { gap: 6px; padding: 0 8px; }

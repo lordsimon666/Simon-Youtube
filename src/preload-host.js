@@ -2,7 +2,7 @@
 // Preload für die eigene Oberfläche (Hauptfenster + Willkommensfenster).
 const { contextBridge, ipcRenderer } = require('electron');
 
-const EVENTS = new Set(['later:list', 'auth:state', 'now-playing', 'toast', 'split:state', 'comments-tab', 'agc:stats', 'lang']);
+const EVENTS = new Set(['later:list', 'auth:state', 'now-playing', 'toast', 'split:state', 'comments-tab', 'agc:stats', 'lang', 'layout:reset', 'address:focus']);
 
 contextBridge.exposeInMainWorld('api', {
   getState: () => ipcRenderer.invoke('state:get'),
@@ -19,6 +19,11 @@ contextBridge.exposeInMainWorld('api', {
   setCommentsTab: (tab) => ipcRenderer.send('comments:tab', tab),
   welcomeChoice: (choice) => ipcRenderer.send('welcome:choice', choice),
   toggleSplit: () => ipcRenderer.send('split:toggle'),
+  openAddress: (text, mode) => ipcRenderer.invoke('address:open', text, mode),
+  copyCurrentLink: () => ipcRenderer.send('video:copyLink'),
+  setDragging: (on) => ipcRenderer.send('layout:dragging', !!on),
+  savePanelOrder: (order) => ipcRenderer.send('layout:order', order),
+  resetLayout: () => ipcRenderer.send('layout:reset'),
   openSettings: () => ipcRenderer.send('settings:open'),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   setSettings: (s) => ipcRenderer.send('settings:set', s),

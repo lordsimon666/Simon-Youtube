@@ -25,14 +25,16 @@ function setNow(info) {
   lastNow = info;
   const el = document.getElementById('now-title');
   const btn = document.getElementById('btn-later-current');
-  if (!info) { el.textContent = ''; btn.hidden = true; return; }
+  if (!info) { el.textContent = ''; btn.hidden = true; document.getElementById('btn-copy-link').hidden = true; return; }
   el.textContent = (info.type === 'short' ? 'Short · ' : '') + (info.title || I18N.t(lang, 'now.loading')) +
     (info.channel ? ' — ' + info.channel : '');
   el.title = el.textContent;
   btn.hidden = false;
+  document.getElementById('btn-copy-link').hidden = false;
   if (role === 'video') document.title = (info.title || 'Video') + ' – Simon YouTube';
 }
 document.getElementById('btn-later-current').addEventListener('click', () => api.addCurrentToLater());
+document.getElementById('btn-copy-link').addEventListener('click', () => api.copyCurrentLink());
 
 api.on('now-playing', setNow);
 api.on('lang', (l) => { lang = l; I18N.apply(lang); setNow(lastNow); });

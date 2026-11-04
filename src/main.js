@@ -1,6 +1,6 @@
 'use strict';
 const {
-  app, BrowserWindow, WebContentsView, ipcMain, session, shell, net, Menu, screen, dialog,
+  app, BrowserWindow, WebContentsView, ipcMain, session, shell, net, Menu, screen, dialog, clipboard,
 } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -43,7 +43,17 @@ const store = {
   settings: {},
   splitMode: false,
   splitBounds: {},
+  panelOrder: null,
 };
+const DEFAULT_ORDER = { tl: 'panel-video', bl: 'panel-browser', tr: 'panel-comments', br: 'panel-later' };
+function cleanOrder(o) {
+  if (!o || typeof o !== 'object') return { ...DEFAULT_ORDER };
+  const out = {};
+  for (const k of Object.keys(DEFAULT_ORDER)) out[k] = o[k];
+  const ids = Object.values(out);
+  const valid = Object.values(DEFAULT_ORDER);
+  return new Set(ids).size === 4 && ids.every((id) => valid.includes(id)) ? out : { ...DEFAULT_ORDER };
+}
 // Profi-Auto-Level (AGC): [min, max, Standard]
 const AGC_RANGES = {
   target: [-36, -6, -18],     // Zielpegel in dBFS (RMS, K-gewichtet)
@@ -79,6 +89,7 @@ function loadStore() {
     if (!store.splitBounds || typeof store.splitBounds !== 'object') store.splitBounds = {};
   } catch { /* erster Start */ }
   store.settings = cleanSettings(store.settings);
+  store.panelOrder = cleanOrder(store.panelOrder);
 }
 
 function writeStore() {
@@ -110,19 +121,19 @@ function parseVideo(raw) {
   let u;
   try { u = new URL(raw); } catch { return null; }
   if (!/^https?:$/.test(u.protocol)) return null;
-  const host = u.hostname.replace(/^(www|m)\./, '');
-  const t = parseTime(u.searchParams.get('t'));
+  const host = u.hostname.replace(/^(www|m|music)\./, '');
+  const t = parseTime(u.searchParams.get('t') || u.searchParams.get('start'));
   const list = u.searchParams.get('list') || null;
   if (host === 'youtu.be') {
     const id = u.pathname.slice(1).split('/')[0];
     return ID_RE.test(id) ? { id, type: 'video', t, list } : null;
   }
-  if (host !== 'youtube.com') return null;
+  if (host !== 'youtube.com' && host !== 'youtube-nocookie.com') return null;
   if (u.pathname === '/watch') {
     const id = u.searchParams.get('v') || '';
     return ID_RE.test(id) ? { id, type: 'video', t, list } : null;
   }
-  const m = u.pathname.match(/^\/(shorts|live)\/([\w-]{11})/);
+  const m = u.pathname.match(/^\/(shorts|live|embed|v)\/([\w-]{11})/);
   if (m) return { id: m[2], type: m[1] === 'shorts' ? 'short' : 'video', t, list: null };
   return null;
 }
@@ -255,6 +266,17 @@ function createView(role) {
   wc.on('will-navigate', guard);
   wc.on('will-redirect', guard);
   wc.on('dom-ready', () => injectCss(role));
+  // Strg+L -> Adressleiste
+  wc.on('before-input-event', (e, input) => {
+    if (input.type === 'keyDown' && (input.control || input.meta) && !input.alt && input.key.toLowerCase() === 'l') {
+      e.preventDefault();
+      if (win && !win.isDestroyed()) {
+        win.focus();
+        win.webContents.focus();
+        win.webContents.send('address:focus');
+      }
+    }
+  });
   if (role === 'video') wc.on('dom-ready', applyPlayerSettings);
 
   if (role === 'browser' || role === 'comments') wc.setAudioMuted(true);
@@ -320,8 +342,14 @@ function fitToHost(role) {
   views[role].setVisible(true);
 }
 
+let draggingPanels = false;
+
 function layoutViews() {
   if (!win || win.isDestroyed()) return;
+  if (draggingPanels && !splitMode) {
+    for (const role of ['browser', 'video', 'comments']) if (views[role]) views[role].setVisible(false);
+    return;
+  }
   if (splitMode) {
     for (const role of Object.keys(hosts)) fitToHost(role);
     return;
@@ -908,7 +936,81 @@ ipcMain.handle('state:get', () => ({
   nowPlaying: current,
   lang: store.settings.lang,
   splitMode,
+  panelOrder: store.panelOrder,
 }));
+
+// ---------------------------------------------------------------- Adressleiste
+function normalizeAddress(text) {
+  let s = String(text || '').trim();
+  // Discord & Co.: <https://…>, Markdown-Links, Text um den Link herum
+  const m = s.match(/https?:\/\/[^\s<>"'\]\)]+/i);
+  if (m) return m[0];
+  s = s.replace(/^<|>$/g, '');
+  if (/^((www|m|music)\.)?(youtube\.com|youtu\.be|youtube-nocookie\.com)\//i.test(s)) return 'https://' + s;
+  if (ID_RE.test(s) && /[\d_-]/.test(s) && /[a-z]/i.test(s)) return `${YT}/watch?v=${s}`; // nackte Video-ID
+  return s;
+}
+
+function openAddress(text, mode) {
+  const s = normalizeAddress(text);
+  if (!s) return { ok: false };
+  const info = parseVideo(s);
+  if (info) {
+    if (mode === 'later') addLater(info); else play(info);
+    return { ok: true, kind: 'video' };
+  }
+  if (isYoutubeUrl(s)) {
+    views.browser.webContents.loadURL(s.replace(/^https?:\/\/(m|music)\.youtube\.com/i, YT));
+    return { ok: true, kind: 'page' };
+  }
+  if (/^[a-z]+:\/\//i.test(s)) {
+    toast(T('addr.notYt'));
+    return { ok: false };
+  }
+  views.browser.webContents.loadURL(`${YT}/results?search_query=${encodeURIComponent(String(text).trim())}`);
+  return { ok: true, kind: 'search' };
+}
+
+ipcMain.handle('address:open', (e, text, mode) => {
+  if (!fromHost(e)) return { ok: false };
+  return openAddress(text, mode === 'later' ? 'later' : 'play');
+});
+
+ipcMain.on('video:copyLink', async (e) => {
+  if (!fromHost(e) || !current) return;
+  let t = 0;
+  try {
+    t = Math.floor(await views.video.webContents.executeJavaScript(
+      "(() => { const v = document.querySelector('.html5-video-player video'); return v ? v.currentTime : 0; })()"
+    ) || 0);
+  } catch { t = 0; }
+  const link = current.type === 'short'
+    ? `${YT}/shorts/${current.id}`
+    : `https://youtu.be/${current.id}${t > 5 ? `?t=${t}` : ''}`;
+  clipboard.writeText(link);
+  toast(T('toast.linkCopied'));
+});
+
+// ---------------------------------------------------------------- Panel-Anordnung
+ipcMain.on('layout:dragging', (e, on) => {
+  if (!fromHost(e)) return;
+  draggingPanels = !!on;
+  layoutViews();
+});
+
+ipcMain.on('layout:order', (e, order) => {
+  if (!fromHost(e)) return;
+  store.panelOrder = cleanOrder(order);
+  saveStore();
+});
+
+ipcMain.on('layout:reset', (e) => {
+  if (!fromHost(e)) return;
+  store.panelOrder = { ...DEFAULT_ORDER };
+  store.splits = { ...DEFAULT_SPLITS };
+  saveStore();
+  sendUI('layout:reset', { order: store.panelOrder, splits: store.splits });
+});
 
 ipcMain.on('split:toggle', (e) => {
   if (!fromHost(e)) return;

@@ -106,6 +106,7 @@ $('agc-preset').addEventListener('change', (e) => {
 });
 $('agc-reset').addEventListener('click', () => { writeAgc(PRESETS.standard); save(); });
 $('import-cookies').addEventListener('click', () => api.importCookies());
+$('layout-reset').addEventListener('click', () => api.resetLayout());
 
 // ---------------------------------------------------------------- Live-Anzeige
 const pct = (db, min, max) => Math.max(0, Math.min(100, ((db - min) / (max - min)) * 100));

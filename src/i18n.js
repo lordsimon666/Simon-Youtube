@@ -136,6 +136,18 @@ var I18N = (function () {
       'set.cookies.desc': 'Falls Google die Anmeldung in der App blockiert: In deinem normalen Browser bei YouTube anmelden, Cookies als <b>cookies.txt</b> exportieren (z.&nbsp;B. Erweiterung „Get cookies.txt LOCALLY“) und hier importieren. Die Datei danach löschen – sie enthält deine Anmeldung.',
       'set.cookies.btn': 'cookies.txt importieren …',
       'set.foot': 'Änderungen gelten sofort und werden gespeichert.',
+      'addr.placeholder': 'YouTube-Link einfügen oder suchen …  (Strg+L)',
+      'addr.play': 'Abspielen (Enter)',
+      'addr.later': 'Zu „Später ansehen“ (Shift+Enter)',
+      'addr.notYt': 'Das ist kein YouTube-Link',
+      'video.copyLink': 'Link kopieren',
+      'video.copyLink.title': 'Link zum aktuellen Video (mit Zeitstempel) kopieren',
+      'toast.linkCopied': 'Link kopiert',
+      'drag.grip': 'Ziehen, um das Panel mit einem anderen zu tauschen',
+      'drag.drop': 'Hier ablegen zum Tauschen',
+      'set.layout': 'Panel-Anordnung',
+      'set.layout.desc': 'Panels lassen sich an ihrem Griff (⠿) in der Kopfzeile auf ein anderes Panel ziehen, um die Plätze zu tauschen. Die Trennlinien ändern die Größe.',
+      'set.layout.reset': 'Anordnung und Größen zurücksetzen',
     },
     en: {
       'top.split': 'Split into 4 windows',
@@ -263,6 +275,18 @@ var I18N = (function () {
       'set.cookies.desc': 'If Google blocks sign-in inside the app: sign in to YouTube in your regular browser, export the cookies as <b>cookies.txt</b> (e.g. with the “Get cookies.txt LOCALLY” extension) and import them here. Delete the file afterwards – it contains your login.',
       'set.cookies.btn': 'Import cookies.txt …',
       'set.foot': 'Changes apply immediately and are saved.',
+      'addr.placeholder': 'Paste a YouTube link or search …  (Ctrl+L)',
+      'addr.play': 'Play (Enter)',
+      'addr.later': 'Add to “Watch later” (Shift+Enter)',
+      'addr.notYt': 'That is not a YouTube link',
+      'video.copyLink': 'Copy link',
+      'video.copyLink.title': 'Copy the link to the current video (with timestamp)',
+      'toast.linkCopied': 'Link copied',
+      'drag.grip': 'Drag to swap this panel with another one',
+      'drag.drop': 'Drop here to swap',
+      'set.layout': 'Panel layout',
+      'set.layout.desc': 'Drag a panel by its handle (⠿) in the header onto another panel to swap places. The dividers change the size.',
+      'set.layout.reset': 'Reset layout and sizes',
     },
   };
 
@@ -282,6 +306,7 @@ var I18N = (function () {
     // nur feste, eigene Texte aus diesem Wörterbuch
     for (const el of doc.querySelectorAll('[data-i18n-html]')) el.innerHTML = t(lang, el.dataset.i18nHtml);
     for (const el of doc.querySelectorAll('[data-i18n-title]')) el.title = t(lang, el.dataset.i18nTitle);
+    for (const el of doc.querySelectorAll('[data-i18n-placeholder]')) el.placeholder = t(lang, el.dataset.i18nPlaceholder);
     const docTitle = document.body && document.body.dataset.i18nDoc;
     if (docTitle) document.title = t(lang, docTitle);
   }

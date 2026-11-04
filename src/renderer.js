@@ -74,6 +74,107 @@ for (const gutter of document.querySelectorAll('.gutter')) {
   });
 }
 
+// ---------------------------------------------------------------- Panels verschieben (Drag & Drop)
+const DEFAULT_ORDER = { tl: 'panel-video', bl: 'panel-browser', tr: 'panel-comments', br: 'panel-later' };
+let dragId = null;
+
+function applyOrder(order) {
+  const o = { ...DEFAULT_ORDER, ...(order || {}) };
+  const ids = Object.values(o);
+  if (new Set(ids).size !== 4 || !ids.every((id) => document.getElementById(id))) return;
+  for (const [pos, id] of Object.entries(o)) {
+    document.querySelector(`.pos[data-pos="${pos}"]`).append(document.getElementById(id));
+  }
+  queueLayout();
+}
+
+function currentOrder() {
+  const o = {};
+  for (const p of document.querySelectorAll('.pos')) o[p.dataset.pos] = p.querySelector('.panel').id;
+  return o;
+}
+
+for (const grip of document.querySelectorAll('.grip')) {
+  grip.addEventListener('dragstart', (e) => {
+    const panel = grip.closest('.panel');
+    dragId = panel.id;
+    e.dataTransfer.setData('text/plain', dragId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setDragImage(panel.querySelector('.panel-head'), 20, 18);
+    panel.classList.add('drag-source');
+    document.body.classList.add('dragging-panel');
+    api.setDragging(true);
+  });
+  grip.addEventListener('dragend', () => {
+    dragId = null;
+    document.body.classList.remove('dragging-panel');
+    for (const el of document.querySelectorAll('.drag-source, .drop-target')) el.classList.remove('drag-source', 'drop-target');
+    api.setDragging(false);
+    queueLayout();
+  });
+}
+
+for (const pos of document.querySelectorAll('.pos')) {
+  pos.addEventListener('dragover', (e) => {
+    if (!dragId || pos.querySelector('.panel').id === dragId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    pos.classList.add('drop-target');
+  });
+  pos.addEventListener('dragleave', (e) => {
+    if (!pos.contains(e.relatedTarget)) pos.classList.remove('drop-target');
+  });
+  pos.addEventListener('drop', (e) => {
+    e.preventDefault();
+    pos.classList.remove('drop-target');
+    const src = document.getElementById(dragId);
+    if (!src) return;
+    const srcPos = src.parentElement;
+    const dst = pos.querySelector('.panel');
+    if (dst === src) return;
+    srcPos.append(dst);
+    pos.append(src);
+    api.savePanelOrder(currentOrder());
+    queueLayout();
+  });
+}
+
+// ---------------------------------------------------------------- Adressleiste
+const addrForm = $('#address');
+const addrInput = $('#address-input');
+const looksLikeVideo = (s) => /(youtu\.be\/|youtube(-nocookie)?\.com\/(watch|shorts\/|live\/|embed\/))/i.test(s);
+
+async function openAddress(mode) {
+  const text = addrInput.value.trim();
+  if (!text) return;
+  const res = await api.openAddress(text, mode);
+  if (res && res.ok) {
+    addrInput.value = '';
+    addrInput.blur();
+  } else {
+    addrForm.classList.remove('error');
+    void addrForm.offsetWidth;
+    addrForm.classList.add('error');
+  }
+}
+
+addrForm.addEventListener('submit', (e) => { e.preventDefault(); openAddress('play'); });
+$('#addr-later').addEventListener('click', () => openAddress('later'));
+addrInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); openAddress('later'); }
+  if (e.key === 'Escape') { addrInput.value = ''; addrInput.blur(); }
+});
+addrInput.addEventListener('input', () => addrForm.classList.remove('error'));
+// Video-Link einfügen (z. B. aus Discord kopiert) -> sofort abspielen
+addrInput.addEventListener('paste', () => {
+  setTimeout(() => { if (looksLikeVideo(addrInput.value)) openAddress('play'); }, 0);
+});
+function focusAddress() { addrInput.focus(); addrInput.select(); }
+window.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') { e.preventDefault(); focusAddress(); }
+});
+$('#btn-copy-link').addEventListener('click', () => api.copyCurrentLink());
+
 // ---------------------------------------------------------------- Anmeldung
 function setAuth({ loggedIn }) {
   last.auth = { loggedIn };
@@ -125,12 +226,14 @@ function setNow(info) {
   if (!info) {
     el.textContent = '';
     $('#btn-later-current').hidden = true;
+    $('#btn-copy-link').hidden = true;
     return;
   }
   const prefix = info.type === 'short' ? 'Short · ' : '';
   el.textContent = prefix + (info.title || L('now.loading')) + (info.channel ? ' — ' + info.channel : '');
   el.title = el.textContent;
   $('#btn-later-current').hidden = false;
+  $('#btn-copy-link').hidden = false;
 }
 $('#btn-later-current').addEventListener('click', () => api.addCurrentToLater());
 
@@ -218,6 +321,7 @@ function showToast(msg) {
 function setLang(l) {
   lang = l;
   I18N.apply(lang);
+  for (const p of document.querySelectorAll('.panel')) p.dataset.drop = L('drag.drop');
   setAuth(last.auth);
   setSplit(last.split);
   setNow(last.now);
@@ -225,6 +329,12 @@ function setLang(l) {
 }
 
 api.on('lang', setLang);
+api.on('address:focus', focusAddress);
+api.on('layout:reset', ({ order, splits: sp }) => {
+  splits = { ...splits, ...sp };
+  applySplits();
+  applyOrder(order);
+});
 api.on('later:list', renderLater);
 api.on('auth:state', setAuth);
 api.on('now-playing', setNow);
@@ -235,6 +345,8 @@ api.on('comments-tab', setTab);
 api.getState().then((s) => {
   lang = s.lang || 'de';
   I18N.apply(lang);
+  for (const p of document.querySelectorAll('.panel')) p.dataset.drop = L('drag.drop');
+  applyOrder(s.panelOrder);
   splits = { ...splits, ...(s.splits || {}) };
   applySplits();
   renderLater(s.watchLater || []);

@@ -16,6 +16,12 @@ YouTube als Desktop-App mit **vier Panels**:
 - **Klick** auf ein Video in *Später ansehen* → startet es und nimmt es aus der Liste.
 - Klick auf einen Vorschlag im Kommentar-Panel spielt ihn ab, Klick auf einen Zeitstempel in einem Kommentar springt zu dieser Stelle.
 - Shorts: im Video-Panel einfach scrollen – die Kommentare wandern automatisch mit.
+- **Adressleiste** oben: YouTube-Link einfügen (z. B. aus Discord kopiert) → startet sofort im Video-Panel.
+  **Shift+Enter** oder **+** legt ihn in *Später ansehen*. Normaler Text sucht auf YouTube. **Strg+L** springt in die Leiste.
+  Versteht `youtu.be/…`, `watch?v=…`, Shorts, Live, Embed, Links mit Zeitstempel und Links in `<…>`.
+- **Link kopieren** im Video-Panel kopiert den Link zum aktuellen Video inklusive Zeitstempel.
+- **Panels verschieben**: Am Griff **⠿** in der Kopfzeile ein Panel auf ein anderes ziehen → die beiden tauschen die Plätze.
+  Die Anordnung wird gespeichert (zurücksetzen unter ⚙ Einstellungen).
 - Die Trennlinien zwischen den Panels lassen sich ziehen (Doppelklick = zurücksetzen).
 - **⊞ In 4 Fenster aufteilen** (oben): Jedes Panel bekommt sein eigenes Fenster (z. B. für mehrere Monitore).
   Beim ersten Mal wird der Bildschirm in vier Viertel geteilt, danach merkt sich die App die Fensterpositionen.

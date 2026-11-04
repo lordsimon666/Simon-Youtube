@@ -22,11 +22,11 @@ function isYoutube(href) {
 function isVideoUrl(href) {
   const u = toUrl(href);
   if (!u || !/^https?:$/.test(u.protocol)) return false;
-  const host = u.hostname.replace(/^(www|m)\./, '');
+  const host = u.hostname.replace(/^(www|m|music)\./, '');
   if (host === 'youtu.be') return ID_RE.test(u.pathname.slice(1).split('/')[0]);
-  if (host !== 'youtube.com') return false;
+  if (host !== 'youtube.com' && host !== 'youtube-nocookie.com') return false;
   if (u.pathname === '/watch') return ID_RE.test(u.searchParams.get('v') || '');
-  const m = u.pathname.match(/^\/(shorts|live)\/([\w-]{11})/);
+  const m = u.pathname.match(/^\/(shorts|live|embed|v)\/([\w-]{11})/);
   return !!m;
 }
 
